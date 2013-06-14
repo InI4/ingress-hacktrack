@@ -1,0 +1,72 @@
+package de.spieleck.ingress.hackstat;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.HashMap;
+import java.util.Map;
+
+public class HTMLSummarizer
+    implements Summarizer
+{
+    private Set<?> block = new LinkedHashSet<?>();
+    private List<String> column = new ArrayList<String>();
+    private Map<String,HashSet<?>> keys = new HashMap<String,HashSet<?>>();
+    private Map<String,Map<?,Double>> f = new HashMap<String,HashMap<?,Double>>();
+
+    public HTMLSummarizer() 
+    {
+    }
+
+    private String label;
+    private Map<?,Integer> repo; 
+    private Map<?,Double> f; 
+
+    public void startColumn(Object label)
+    {
+    }
+
+    public void start(String label)
+    {
+        this.label = label;
+        column.add(label);
+        repo = data.get(label);
+    }
+
+    public void description(String desc)
+        throws IOException
+    {
+        // a.append(String.format("\n"+label+", Summary, "+desc+"\n"));
+    }
+
+    public void setNorms(double f, double f2)
+    {
+        
+        this.f = f;
+        this.f2 = f2;
+    }
+
+    public void item(Object key, int h)
+        throws IOException
+    {
+        if ( !block.contains(key) ) block.add(key);
+        repo.put(key, h);
+        a.append(String.format("   %-10s %7d%7.1f%%%7.1f%%\n", key, h, f*h, f2*h));
+    }
+
+    public void finish(int sum)
+        throws IOException
+    {
+        a.append(String.format("   ==================%7.1f%%\n", f*sum));
+    }
+
+    public void close()
+        throws IOException
+    {
+        // we don't keep anything in this summarizer, we are done.
+    }
+
+}

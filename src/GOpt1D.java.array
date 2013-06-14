@@ -1,0 +1,83 @@
+package de.spieleck.ingress.hackstat;
+
+import java.util.Arrays;
+
+public class GOpt1D
+{
+    // Some golden section magic
+    public final double DIVI = 1.0 / (0.5 + Math.sqrt(1.25));
+
+    public interface Function
+    {
+        public double eval(double x);
+    }
+
+    private double a, b;
+
+    public GOpt1D(double a, double b)
+    {
+        this.a = a;
+        this.b = b;
+    }
+
+    private double[] x, y;
+    private int n;
+    public double[] getX() { return x; }
+    public double[] getY() { return y; }
+    public int getN() { return n; }
+        
+    public double opt(Function f, double eps)
+    {
+        int nMax = Math.max(5, (int) Math.sqrt(Math.abs(a-b)/eps));
+        x = new double[nMax];
+        y = new double[nMax];
+        n = 2;
+        x[0] = Math.min(b,a);
+        x[1] = Math.max(a,b);
+        y[0] = f.eval(x[0]);
+        y[1] = f.eval(x[1]);
+        double xMax, yMax;
+        if ( y[0] > y[1] ) {
+            xMax = x[0];
+            yMax = y[0];
+        } else {
+            xMax = x[1];
+            yMax = y[1];
+        }
+        while ( n < nMax ) {
+            int iOpt = -1;
+            double dxMax = 1.0;
+            double optValue = Double.MAX_VALUE;
+            for(int i = 1; i < n; i++) {
+                double dx = x[i] - x[i-1];
+                dxMax = Math.max(dxMax, dx);
+                double dy = 2.0*yMax - y[i] - y[i-1];
+                double value = (eps + dy)/Math.pow(dx,1.5);
+// System.err.println("  "+i+" "+value+" dx="+dx+" dy="+dy);                
+                if ( value < optValue ) {
+                    optValue = value;
+                    iOpt = i;
+                }
+            }
+// System.out.println("iOpt="+iOpt+", v="+optValue);
+            assert(iOpt > 0);
+            double h = y[iOpt] - y[iOpt-1];
+            double ratio = h > 0.0 ? DIVI : h < 0.0 ? 1.0 - DIVI : 0.5;
+            double x0 = x[iOpt-1] + ratio*(x[iOpt] - x[iOpt-1]);
+            double y0 = f.eval(x0);
+            if ( y0 > yMax ) {
+                xMax = x0;
+                yMax = y0;
+            }
+// System.err.println("*** x0="+x0+"; y0="+y0+";  ymax="+yMax); 
+            System.arraycopy(x, iOpt, x, iOpt+1, n-iOpt);
+            x[iOpt] = x0;
+            System.arraycopy(y, iOpt, y, iOpt+1, n-iOpt);
+            y[iOpt] = y0;
+// System.out.println(Arrays.toString(x));      
+// System.out.println(Arrays.toString(y));            
+            n++;
+        }
+        return xMax;
+    } 
+}
