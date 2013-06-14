@@ -195,7 +195,7 @@ outerloop:
 		}
     if ( totalCount == 0 ) return null;
     // if (longMode != LONG || totalCount < 10 ) return null;
-    FullResult res = new FullResult(out);
+    FullResult res = new FullResult(filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
 		res.summary("Items", noOfItems, totalCount);
 		res.summary("Resos", noOfResos, totalCount);
@@ -226,13 +226,21 @@ outerloop:
    */
   public class FullResult
   {
+      private HackFilter[] filters;
       private Summarizer out;
-      private HashMap<String,HashMap<Object,Double>> data = new HashMap<>();
+      private HashMap<String,DiscreteDistr> allData = new HashMap<>();
 
-      private FullResult(Summarizer out)
+      private FullResult(HackFilter[] filters, Summarizer out)
       {
+          this.filters = filters;
           this.out = out;
       }
+
+      public HackFilter[] getFilters() { return filters; }
+
+      public Set<String> keys() { return allData.keySet(); }
+
+      public DiscreteDistr get(String key) { return allData.get(key); }
 
       private void summary(String label, Map<? extends Object, Integer> data, Integer norm)
           throws Exception
@@ -270,9 +278,10 @@ outerloop:
         if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
         out.description(description);
         out.setNorms(f, f2);
+        DiscreteDistr distr = prepareDistr(label);
         for(Object key : keys) {
             out.item(key, data.get(key));
-            addData(label, key, data.get(key)*f2);
+            distr.inc(key, (int) data.get(key));
         }
         out.finish(sum);
       }
@@ -303,16 +312,34 @@ outerloop:
         String description = String.format("total=%d, norm=%d ", sum, norm);
         if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
         out.description(description);
+        DiscreteDistr distr = prepareDistr(label);
         for(Object key : keys) {
             out.item(key, data.get(key));
-            addData(label, key, data.get(key).average());
+            distr.inc(key, (int) data.get(key).sum());
         }
         out.finish(sum);
       }
 
-      private void addData(String key1, Object key2, double d)
+      private DiscreteDistr prepareDistr(String label)
       {
+          DiscreteDistr res = new DiscreteDistr();
+          allData.put(label, res);
+          return res;
       }
+  }
+
+  private static void compareDist(FullResult base, FullResult res)
+  {
+      System.err.println(Util.append(new StringBuilder(), res.getFilters()));
+      for(String key : base.keys()) {
+          DiscreteDistr d1 = base.get(key);
+          DiscreteDistr d2 = res.get(key);
+          Set freedom = d1.combinedKeys(d2);
+          if ( d2 == null ) continue;
+          System.err.println(String.format("   gtest(%-17s)=%8.2g  %3d  %8.1g", key, d1.gtest(d2), 
+              freedom.size()-1, SFunc.critchi(0.95, freedom.size()-1)));
+      }
+      System.err.println();
   }
 
 	public static void main(String[] args)
@@ -327,11 +354,14 @@ outerloop:
 		for(String arg : args) p1.add(new File(arg));
     p1.dumpCSV("out.csv",";");
     HackFilter[] times = new HackFilter[] {NO_FILTER, new LaterThanFilter("2013-06-02")};
-          
+    FullResult base1 = p1.stats(o, NO_FILTER);
     for(HackFilter tFilter : times) {
-        p1.stats(o, tFilter);
+        FullResult res1 = p1.stats(o, tFilter);
+        compareDist(base1, res1);
         for(HackFilter f0 : FRIEND_OR_FOE) {
-            p1.stats(o, tFilter, f0);
+            FullResult res2 = p1.stats(o, tFilter, f0);
+            compareDist(res1, res2);
+            //
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER );
             p1.stats(o, tFilter, f0, HL1_FILTER);

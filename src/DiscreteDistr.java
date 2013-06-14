@@ -1,3 +1,5 @@
+package de.spieleck.ingress.hackstat;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -64,16 +66,26 @@ public class DiscreteDistr<T>
     public double gtest(DiscreteDistr d2)
     {
         double sum = 0.0;
-        Set<T> keys = new HashSet<T>();
-        keys.addAll(keySet());
-        keys.addAll(d2.keySet());
+        Set<T> keys = combinedKeys(d2);
+        double f1 = d2.getTotal(); 
         for(T t : keys) {
             double o = d2.getRaw(t);
-            if ( o > 0.0 ) sum += o * Math.log(o/get(t));
+            if ( o > 0.0 ) sum += o * Math.log(o/(f1*get(t)));
         }
         return sum;
     }
 
+    public Set<T> combinedKeys(DiscreteDistr d2)
+    {
+        Set<T> res = new HashSet<T>();
+        res.addAll(keySet());
+        if ( d2 != null ) res.addAll(d2.keySet());
+        return res;
+    }
+
+    /*
+    * XXX Junk XXX
+    */
     public static double gtest(DiscreteDistr d1, DiscreteDistr d2)
     {
         throw new RuntimeException("Not yet implemented!");

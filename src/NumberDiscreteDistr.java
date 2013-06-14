@@ -1,3 +1,5 @@
+package de.spieleck.ingress.hackstat;
+
 public class NumberDiscreteDistr<T extends Number>
     extends DiscreteDistr<T>
 {
