@@ -63,6 +63,7 @@ public class XSLTSummarizer
         throws SAXException
     {
         startElement(name);
+        // text(String.format("%f",value));
         text(Double.toString(value));
         endElement(name);
     }

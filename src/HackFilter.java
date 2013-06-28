@@ -72,26 +72,46 @@ public interface HackFilter
         public final String toString() { return "HL"+level(); }
     }
 
-    public final static SimpleDateFormat DF = new SimpleDateFormat("yyyy-MM-dd");
+    public final static SimpleDateFormat DF = new SimpleDateFormat("yy-MM-dd");
 
-    public static class LaterThanFilter
+    public abstract static class DateFilter
         implements HackFilter
     {
-        private long date;
-        private String dateStr;
+        protected long date;
+        protected String dateStr;
 
-        public LaterThanFilter(String dateStr)
+        public DateFilter(String dateStr)
             throws ParseException
         {
             this.dateStr = dateStr;
             date = DF.parse(dateStr).getTime() / 1000L;
-            // System.err.println("LaterThanFilter="+date+" "+new Date(date*1000L)); 
         }
 
-        public final boolean accept(HackResult hr) {
-            return hr.timestamp >= date;
+        public abstract boolean accept(HackResult hr); 
+       
+        public abstract String toString();
+    }
+
+    public static class LaterThanFilter
+        extends DateFilter
+    {
+        public LaterThanFilter(String dateStr) throws ParseException
+        {
+            super(dateStr);
         }
-        public final String toString() { return ">"+dateStr; }
+        public boolean accept(HackResult hr) { return hr.timestamp > date; }
+        public String toString() { return ">"+dateStr; }
+    }
+
+    public static class BeforeThanFilter
+        extends DateFilter
+    {
+        public BeforeThanFilter(String dateStr) throws ParseException
+        {
+            super(dateStr);
+        }
+        public boolean accept(HackResult hr) { return hr.timestamp < date; }
+        public String toString() { return "<"+dateStr; }
     }
 
 

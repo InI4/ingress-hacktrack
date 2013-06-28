@@ -113,7 +113,7 @@ outerloop1:
 			  if ( !fi.accept(hackResult) ) continue outerloop1;
 		  }
 		  for(HackItem hackItem : hackResult.hack.items) {
-        String fullItem = hackItem.object;
+        String fullItem = shortItemName(hackItem);
         if ( hackItem.level > 0 ) {
           int relLevel = hackItem.level - hackLevel;
           fullItem += "."+relLevel;
@@ -145,7 +145,8 @@ outerloop:
         int count = hackItem.quantity;
         sumCount += count;
         increment(counts, count, 1);
-        increment(types, hackItem.object, count);
+        String shortName = shortItemName(hackItem);
+        increment(types, shortName, count);
         switch ( hackItem.object ) {
           case RESO: sumResoCount += hackItem.quantity; break;
           case XMP: sumXmpCount += hackItem.quantity; break;
@@ -153,7 +154,7 @@ outerloop:
           case SHIELD: sumShieldCount += hackItem.quantity; break;
           case CUBE: sumCubeCount += hackItem.quantity; break;
         }
-        String fullItem = hackItem.object;
+        String fullItem = shortName;
         increment(levelCounts, hackLevel, 1);
         if ( hackItem.level > 0 ) {
           levelResults.inc(hackLevel, hackItem.level, count);
@@ -217,6 +218,21 @@ outerloop:
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
     return res;
+  }
+
+  private final static Map<String,String> ABBR = new HashMap<>();
+  static {
+      ABBR.put("ADA Refactor", "ADARef");
+      ABBR.put("JARVIS Virus", "JARVIS");
+      ABBR.put("Link Amplifier", "LinkAmp");
+      ABBR.put("Resonator", "Reso");
+  }
+
+  public String shortItemName(HackItem item)
+  {
+      String name = item.object;
+      String name2 = ABBR.get(name);
+      return name2 == null ? name : name2;
   }
 
   /**
@@ -353,7 +369,7 @@ outerloop:
     o = new XSLTSummarizer("layout1.xsl");
 		for(String arg : args) p1.add(new File(arg));
     p1.dumpCSV("out.csv",";");
-    HackFilter[] times = new HackFilter[] {NO_FILTER, new LaterThanFilter("2013-06-02")};
+    HackFilter[] times = new HackFilter[] {new BeforeThanFilter("13-06-02"), new LaterThanFilter("13-06-02")};
     FullResult base1 = p1.stats(o, NO_FILTER);
     for(HackFilter tFilter : times) {
         FullResult res1 = p1.stats(o, tFilter);
@@ -364,8 +380,8 @@ outerloop:
             //
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER );
-            p1.stats(o, tFilter, f0, HL1_FILTER);
-            if(longMode != LONG) p1.stats(o, tFilter, f0, L26_FILTER);
+            if(longMode == LONG) p1.stats(o, tFilter, f0, HL1_FILTER);
+            // if(longMode != LONG) p1.stats(o, tFilter, f0, L26_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL2_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL3_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL4_FILTER);

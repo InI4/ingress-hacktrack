@@ -12,11 +12,11 @@
             font-family: arial, sans-serif, helvetica;
         }
         .data {
-          font-size:11px;
+          font-size:8pt;
           text-align: right;
         }
         .filter {
-          font-size:13px;
+          font-size:9pt;
         }
         .rowleg, .rowleg2 {
             vertical-align: text-top;
@@ -31,6 +31,9 @@
         }
         .first {
             background: #A6E1FF;
+        }
+        .percentage {
+            text-align: center;
         }
       </style>
       </head>
@@ -101,8 +104,7 @@
                 <xsl:value-of select="round($me/hs:average)" />
             </td>
             <td class="data percentage nobr">
-                [<xsl:value-of select="round($me/hs:min*10) div 10" />;
-                <xsl:value-of select="round($me/hs:max*10) div 10" />]%
+                <xsl:value-of select="round($me/hs:min*10) div 10" />-<xsl:value-of select="round($me/hs:max*10) div 10" />%
             </td>
           </xsl:when>
           <xsl:otherwise>
