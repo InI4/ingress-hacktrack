@@ -97,6 +97,7 @@ public class Phase1
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
 		IMatrix<Integer,Integer> levelResults = new IMatrix<>();
+		Map<Integer,Stats1D> levelResults26 = new HashMap<>();
 		Map<Integer,Integer> levelCounts = new HashMap<>();
 		Map<String,Stats1D> crossItems = new HashMap<>();
 		Map<Integer,Stats1D> playerLevelVsKeys = new HashMap<>();
@@ -160,6 +161,9 @@ outerloop:
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
           int relLevel = hackItem.level - hackLevel;
+          if ( hackLevel > 1 && hackLevel < 7 ) {
+              increment(levelResults26, relLevel, count);
+          }
           fullItem += "."+relLevel;
           relLevelCount++;
           relLevelSum += relLevel;
@@ -212,7 +216,10 @@ outerloop:
 		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true);
 		if(longMode == LONG) res.summary2("Hack Level vs Keys", hackLevelVsKeys, totalCount, true);
 		for(int i = 1; i <= 8; i++) {
-        res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false);
+        if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false);
+        if ( longMode != LONG && i == 2 ) {
+            res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true);
+        }
 		}
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
