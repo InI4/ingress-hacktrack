@@ -10,7 +10,7 @@ public class HackResult
 	Hack hack;
   int levelSum = -1;
 	int sourceLine;
-  long timestamp;
+  double timestamp;
   // String source; // unused ..
 
   private void checkLevelSum()
