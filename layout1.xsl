@@ -7,6 +7,7 @@
   <xsl:template match="hs:hackstat">
       <html>
       <head>
+      <title>Hackstat <xsl:value-of select="hs:created"/></title>
       <style type="text/css">
         td, th {
             font-family: arial, sans-serif, helvetica;
@@ -38,6 +39,7 @@
       </style>
       </head>
       <body>
+      <h1><xsl:value-of select="hs:created"/></h1>
       <!-- Does not work with Java7, but with old Saxon?! -->
       <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" />
       <!--

@@ -378,10 +378,9 @@ outerloop:
 	{
     int longMode = SHORT;
 		Phase1 p1 = new Phase1(longMode);
-    Summarizer o;
-    o = new XSLTSummarizer();
-    o = new AppendableSummarizer(System.out);
-    o = new XSLTSummarizer("layout1.xsl");
+    CombinedSummarizer o = new CombinedSummarizer();
+    o.addSummarizer(new XSLTSummarizer());
+    o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
 		for(String arg : args) p1.add(new File(arg));
     p1.dumpCSV("out.csv",";");
     HackFilter[] times = new HackFilter[] {new BeforeThanFilter("13-06-02"), new LaterThanFilter("13-06-02")};

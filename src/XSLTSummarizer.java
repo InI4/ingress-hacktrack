@@ -1,5 +1,8 @@
 package de.spieleck.ingress.hackstat;
 
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
 import javax.xml.transform.Transformer;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerConfigurationException;
@@ -8,6 +11,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.SAXException;
@@ -15,6 +19,8 @@ import org.xml.sax.SAXException;
 public class XSLTSummarizer
     implements Summarizer
 {
+    private final static SimpleDateFormat CREATE_DF = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
     private TransformerHandler trans;
     public final static String NSPC = "de.spieleck.ingress.hackstat";
     private final static AttributesImpl NOATT = new AttributesImpl();
@@ -32,10 +38,16 @@ public class XSLTSummarizer
 
     public XSLTSummarizer(String fName) 
         throws TransformerConfigurationException, SAXException
+    {
+        this(fName, "out.html");
+    }
+
+    public XSLTSummarizer(String fName, String oName) 
+        throws TransformerConfigurationException, SAXException
     { 
         SAXTransformerFactory fac = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
         trans = fac.newTransformerHandler(new StreamSource(fName));
-        trans.setResult(new StreamResult("out.html"));
+        trans.setResult(new StreamResult(oName));
         internalStart();
     }
 
@@ -44,6 +56,9 @@ public class XSLTSummarizer
     {
         trans.startDocument();
         startElement("hackstat");
+        startElement("created");
+        text(CREATE_DF.format(new Date()));
+        endElement("created");
     }
 
     private double f, f2;
