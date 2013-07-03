@@ -18,6 +18,7 @@ public class HackItem
           case XMP: s = "X"+level; break;
           default:
             s = object;
+            if ( level > 0 ) s += level;
         }
         if ( quantity > 1 ) s += "x"+quantity;
         return s;

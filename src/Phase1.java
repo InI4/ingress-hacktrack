@@ -14,12 +14,16 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.apache.log4j.Logger;
+
 import static de.spieleck.ingress.hackstat.GenericHelper.*;
 import static de.spieleck.ingress.hackstat.HackFilter.*;
 
 public class Phase1
     implements Globals
 {
+  private final static Logger L = Logger.getLogger(Phase1.class);
+
 	private List<HackResult> allHacks = new ArrayList<HackResult>();
 
   private final DataParser parser = new DataParser(true);
@@ -43,18 +47,18 @@ public class Phase1
     for(HackResult hackResult : d) {
         int hackLevel = hackResult.getLevel();
         for(HackItem hackItem : hackResult.hack.items) {
-            if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) plausi("1", fi, hackItem, hackResult);
-            else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) plausi("2", fi, hackItem, hackResult);
-            else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) plausi("3", fi, hackItem, hackResult);
+            if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) plausi("WrongCube", fi, hackItem, hackResult);
+            else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) plausi("ItemTooHigh", fi, hackItem, hackResult);
+            else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) plausi("ItemTooLow", fi, hackItem, hackResult);
         }
     }
 		allHacks.addAll(d);
-		System.out.println("***** "+allHacks.size());
+    L.info("***** #allHacks="+allHacks.size());
 	}
 
   private static void plausi(String mark, File fi, HackItem item, HackResult hack)
   {
-      System.err.println(String.format("WARN=%s@%-36s %-4s %s",mark,fi+"."+hack._id,item,hack));
+      L.warn(String.format("%s@%-36s %-4s %s",mark,fi+"."+hack._id,item,hack));
   }
 
   /**
@@ -79,7 +83,7 @@ public class Phase1
           pw.println();
       }
       pw.close();
-      System.err.println("Finished <"+fName+">.");
+      L.info("Finished <"+fName+">.");
   }
 
 	public FullResult stats(Summarizer out, HackFilter... filters)

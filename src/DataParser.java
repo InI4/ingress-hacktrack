@@ -35,15 +35,15 @@ public class DataParser
         L.info("Claimed size="+o.total_rows);
         List<HackResult> res = new ArrayList<HackResult>(o.total_rows);
         int total = 0;
-		int count = 0;
+        int count = 0;
         for(_HackRow r : o.rows) {
-			++count;
+            ++count;
             HackResult h = r.doc;
-			h.sourceLine = count; // XXX this does not work, since GSON knows the lines.
-			if ( h.resos == null ) {
-          L.warn("Skipping item "+count);
-          continue;
-			}
+            h.sourceLine = count; // XXX this does not work, since GSON knows the lines.
+            if ( h.resos == null ) {
+                L.warn("Skipping item "+count);
+                continue;
+            }
             if ( verbose ) L.debug(String.format("  %5d %s\n", count, h));
             total += h.getItemCount();
             res.add(h);
