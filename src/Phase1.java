@@ -241,6 +241,7 @@ outerloop:
       ABBR.put("JARVIS Virus", "JARVIS");
       ABBR.put("Link Amplifier", "LinkAmp");
       ABBR.put("Resonator", "Reso");
+      ABBR.put("Force Amplifier", "ForceAmp");
   }
 
   public String shortItemName(HackItem item)
