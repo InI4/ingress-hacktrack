@@ -47,6 +47,10 @@ public class Phase1
     for(HackResult hackResult : d) {
         int hackLevel = hackResult.getLevel();
         for(HackItem hackItem : hackResult.hack.items) {
+            if ( MEDIA.equals(hackItem.object) && hackItem.level > 0 ) {
+                hackItem.level = 0;
+                L.debug("Media fixed@"+hackResult);
+            }
             if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) plausi("WrongCube", fi, hackItem, hackResult);
             else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) plausi("ItemTooHigh", fi, hackItem, hackResult);
             else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) plausi("ItemTooLow", fi, hackItem, hackResult);

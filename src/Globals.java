@@ -11,4 +11,5 @@ public interface Globals
     public final static String KEY = "Key";
     public final static String SHIELD = "Shield";
     public final static String CUBE = "Cube";
+    public final static String MEDIA = "Media";
 }
