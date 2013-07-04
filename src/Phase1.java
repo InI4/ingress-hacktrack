@@ -26,7 +26,7 @@ public class Phase1
 
 	private List<HackResult> allHacks = new ArrayList<HackResult>();
 
-  private final DataParser parser = new DataParser(true);
+  private final DataParser parser = new DataParser();
 
   private final static int SHORT = 0;
   private final static int ADAPTIVE = 1;

@@ -18,11 +18,8 @@ public class DataParser
 
     private final static Gson GSON = new Gson();
 
-    private final boolean verbose;
-
-    public DataParser(boolean verbose)
+    public DataParser()
     {
-        this.verbose = verbose;
     }
 
     public List<HackResult> grok(File fi)
@@ -40,11 +37,11 @@ public class DataParser
             ++count;
             HackResult h = r.doc;
             h.sourceLine = count; // XXX this does not work, since GSON knows the lines.
-            if ( h.resos == null ) {
-                L.warn("Skipping item "+count);
+            if ( h.resos == null || h.hacker == null ) {
+                L.warn("Skipping item "+count+" no resonators attached. id="+h._id);
                 continue;
             }
-            if ( verbose ) L.debug(String.format("  %5d %s\n", count, h));
+            if(L.isTraceEnabled())L.trace(String.format("  %5d %s\n", count, h));
             total += h.getItemCount();
             res.add(h);
         }
