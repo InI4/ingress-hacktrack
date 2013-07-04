@@ -24,7 +24,7 @@ public class DiscreteDistr<T>
 
     public int inc(T key, int delta)
     {
-        if ( delta <= 0 ) {
+        if ( delta < 0 ) {
             // we could do some smart (checked) updating here.
             throw new RuntimeException("Negative increment not allowed.");
         }

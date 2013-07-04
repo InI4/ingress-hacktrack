@@ -150,6 +150,7 @@ outerloop:
 		  int relLevelSum = 0;
 		  int relLevelCountNPC = 0;
 		  int relLevelSumNPC = 0;
+      int[] hackLevelSum = new int[9];
 		  for(HackItem hackItem : hackResult.hack.items) {
         int count = hackItem.quantity;
         sumCount += count;
@@ -165,13 +166,11 @@ outerloop:
         }
         String fullItem = shortName;
         increment(levelCounts, hackLevel, 1);
+        hackLevelSum[hackItem.level] += count;
         if ( hackItem.level > 0 ) {
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
           int relLevel = hackItem.level - hackLevel;
-          if ( hackLevel > 1 && hackLevel < 7 ) {
-              increment(levelResults26, relLevel, count);
-          }
           fullItem += "."+relLevel;
           relLevelCount++;
           relLevelSum += relLevel;
@@ -184,6 +183,11 @@ outerloop:
         }
         else {
           sumOtherCount += count;
+        }
+        if ( hackLevel > 1 && hackLevel < 7 ) {
+            for(int i = -1; i < 3; i++) {
+                increment(levelResults26, i, hackLevelSum[i+hackLevel]);
+            }
         }
         notSeenItems.remove(fullItem);
         increment(crossItems, fullItem, count);
