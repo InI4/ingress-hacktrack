@@ -388,7 +388,7 @@ outerloop:
     o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
 		for(String arg : args) p1.add(new File(arg));
     p1.dumpCSV("out.csv",";");
-    HackFilter[] times = new HackFilter[] {new BeforeThanFilter("13-06-02"), new LaterThanFilter("13-06-02")};
+    HackFilter[] times = new HackFilter[] {new LaterThanFilter("13-06-02"), new BeforeThanFilter("13-06-02")};
     FullResult base1 = p1.stats(o, NO_FILTER);
     for(HackFilter tFilter : times) {
         FullResult res1 = p1.stats(o, tFilter);
@@ -400,7 +400,7 @@ outerloop:
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER );
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL1_FILTER);
-            // if(longMode != LONG) p1.stats(o, tFilter, f0, L26_FILTER);
+            if(longMode != LONG) p1.stats(o, tFilter, f0, L26_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL2_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL3_FILTER);
             if(longMode == LONG) p1.stats(o, tFilter, f0, HL4_FILTER);
