@@ -104,6 +104,7 @@ public class Phase1
 		Map<String,Integer> noOfPatternBig = new HashMap<>();
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
+		Map<String,Integer> rareItems = new HashMap<>();
 		IMatrix<Integer,Integer> levelResults = new IMatrix<>();
 		Map<Integer,Stats1D> levelResults26 = new HashMap<>();
 		Map<Integer,Integer> levelCounts = new HashMap<>();
@@ -167,6 +168,9 @@ outerloop:
         String fullItem = shortName;
         increment(levelCounts, hackLevel, 1);
         hackLevelSum[hackItem.level] += count;
+        if ( hackItem.hasRarity() ) {
+            increment(rareItems, hackItem.toString(), count);
+        }
         if ( hackItem.level > 0 ) {
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
@@ -219,6 +223,7 @@ outerloop:
 		res.summary("Xmps", noOfXmps, totalCount);
 		res.summary("Other", noOfOther, totalCount);
 		res.summary("Short Patterns", noOfPattern, totalCount);
+		res.summary("Rare Items", rareItems, totalCount);
 		if(longMode == LONG) res.summary("Long Patterns", noOfPatternBig, totalCount);
 		if(longMode == LONG) res.summary("Huge Patterns", noOfPatternHuge, totalCount);
 		res.summary("Items by Type", types, totalCount);
