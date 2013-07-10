@@ -65,14 +65,36 @@ public class DiscreteDistr<T>
      */
     public double gtest(DiscreteDistr d2)
     {
+        return gtest(d2, false);
+    }
+
+    /**
+     * Compares, if d2 is similar to the current distribution.
+     * Note, this is not the symmetric test, if two such distributions coincide.
+     * Allows turning on Yates correction. Note this can result in negative, i.e. useless
+     * Test results.
+     */
+    public double gtest(DiscreteDistr d2, boolean yatesCorrection)
+    {
         double sum = 0.0;
         Set<T> keys = combinedKeys(d2);
-        double f1 = d2.getTotal(); 
+        double d2Total = d2.getTotal(); 
         for(T t : keys) {
-            double o = d2.getRaw(t);
-            if ( o > 0.0 ) sum += o * Math.log(o/(f1*get(t)));
+            double seen = d2.getRaw(t);
+            double expected = d2Total * get(t);
+            if ( yatesCorrection ) {
+                // Yates continuity correction, adjust seen 0.5 towards expectation.
+                if (expected + 0.5 < seen)
+                  seen -= 0.5;
+                else if (expected - 0.5 > seen)
+                  seen += 0.5;
+                else
+                  seen = expected;
+            }
+            if ( seen == 0 ) continue;
+            sum += seen * Math.log(seen/expected);
         }
-        return sum;
+        return 2.0 * sum;
     }
 
     public Set<T> combinedKeys(DiscreteDistr d2)
