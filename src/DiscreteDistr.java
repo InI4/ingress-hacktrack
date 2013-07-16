@@ -108,13 +108,27 @@ public class DiscreteDistr<T>
     /*
     * XXX Junk XXX
     */
-    public static double gtest(DiscreteDistr d1, DiscreteDistr d2)
+    public static <T> double gtest(DiscreteDistr<T> d1, DiscreteDistr<T> d2)
     {
-        throw new RuntimeException("Not yet implemented!");
-        //will be 2 * sum * (entropy(rowSums) + entropy(collSums) - entropy(k))
+        Set<T> keys = d1.combinedKeys(d2);
+        long[] colSums = new long[keys.size()];
+        long rowSums1 = 0, rowSums2 = 0;
+        long[][] cross = new long[2][keys.size()];
+        int i = 0;
+        for(T key : keys) {
+            long o1 = d1.getRaw(key);
+            long o2 = d2.getRaw(key);
+            rowSums1 += o1;
+            rowSums2 += o2;
+            colSums[i] = o1 + o2;
+            cross[0][i] = o1;
+            cross[1][i] = o2;
+        }
+        return 2.0 * (rowSums1+rowSums2)
+              *(entropy(rowSums1,rowSums2)+entropy(colSums)-entropy(cross));
     }
 
-    public static double entropy(int[][] k) {
+    public static double entropy(long[][] k) {
         double h = 0;
         long sum = 0;
         for (int i = 0; i < k.length; i++) sum += sum(k[i]);
@@ -126,7 +140,7 @@ public class DiscreteDistr<T>
         return h;
     }
 
-    public static double entropy(int[] k) {
+    public static double entropy(long... k) {
         double h = 0;
         long sum = sum(k);
         for (int i = 0; i < k.length; i++) if (k[i] != 0) {
@@ -135,13 +149,13 @@ public class DiscreteDistr<T>
         return h;
     }
 
-    public static double h(int c, long sum) { 
+    public static double h(long c, long sum) { 
         if ( c == 0 ) return 0.0;
         double p = (double) c / sum;
         return p * Math.log(p);
     }
 
-    public static long sum(int[] k) {
+    public static long sum(long[] k) {
         long sum = 0;
         for (int i = 0; i < k.length; i++) sum += k[i];
         return sum;
