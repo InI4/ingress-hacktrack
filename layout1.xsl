@@ -36,15 +36,29 @@
         .percentage {
             text-align: center;
         }
+        .small {
+            font-size:9pt;
+            font-weight: normal;
+        }
       </style>
       </head>
       <body>
+      <a name="top" />
       <h1><xsl:value-of select="hs:created"/></h1>
       <!-- Does not work with Java7, but with old Saxon?! -->
       <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" />
-      <!--
-      <xsl:for-each select="$all-stats"><xsl:value-of select="."/>, </xsl:for-each>
-      -->
+      Statistics: 
+      <xsl:for-each select="$all-stats">
+          <xsl:variable name="meStats" select="." />
+          <a>
+              <xsl:attribute name="href">
+                  <xsl:text>#</xsl:text>
+                  <xsl:value-of select="generate-id($meStats)" />
+              </xsl:attribute>
+              <xsl:value-of select="."/>
+          </a>
+          <xsl:text>, </xsl:text>
+      </xsl:for-each>
       <table>
       <xsl:for-each select="$all-stats">
           <xsl:variable name="meStats" select="." />
@@ -55,7 +69,17 @@
                 <xsl:attribute name="rowspan">
                     <xsl:value-of select="count($items) + 1" />
                 </xsl:attribute>
-              <xsl:value-of select="."/>
+                <a>
+                  <xsl:attribute name="name">
+                      <xsl:value-of select="generate-id($meStats)" />
+                  </xsl:attribute>
+                </a>
+                <xsl:value-of select="."/>
+                <div class="small">
+                    <xsl:value-of select="following::hs:description" />
+                </div>
+                <br />
+                <a href="#top"><sub>^</sub></a>
             </th>
             <td> </td>
             <xsl:for-each select="//hs:column">
@@ -67,6 +91,8 @@
                     <xsl:value-of select="count($items) + 1" />
                 </xsl:attribute>
               <xsl:value-of select="."/>
+              <br />
+              <a href="#top"><sub>^</sub></a>
             </th>
           </tr>
           <xsl:for-each select="$items" >
