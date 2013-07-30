@@ -24,6 +24,32 @@ public class Phase1
 {
   private final static Logger L = Logger.getLogger(Phase1.class);
 
+  private final static int WEEK = 60*60*24*7;
+
+  private static HackFilter POST_JUNE_FILTER = null;
+  private static HackFilter PRE_JUNE_FILTER = null;
+  private static HackFilter[] times;
+  private final static Map<String,String> ABBR = new HashMap<>();
+  static
+  {
+      try {
+        POST_JUNE_FILTER = new LaterThanFilter("13-06-02");
+        PRE_JUNE_FILTER = new BeforeThanFilter("13-06-02");
+      }
+      catch ( Exception ex ) {
+          L.fatal("Cannot construct basic filters!");
+      }
+      times = new HackFilter[] {POST_JUNE_FILTER, PRE_JUNE_FILTER};
+      ABBR.put("ADA Refactor", "ADARef");
+      ABBR.put("JARVIS Virus", "JARVIS");
+      ABBR.put("Link Amplifier", "LinkAmp");
+      ABBR.put("Resonator", "Reso");
+      ABBR.put("Force Amplifier", "ForceAmp");
+  }
+
+  // No output without subsummarizers.
+  private final static Summarizer NO_SUMMARY = new CombinedSummarizer();
+
 	private List<HackResult> allHacks = new ArrayList<HackResult>();
 
   private final DataParser parser = new DataParser();
@@ -33,6 +59,8 @@ public class Phase1
   private final static int LONG = 2;
 
   private int longMode;
+
+  private double startTime = Double.MAX_VALUE;
 
 	public Phase1(int longMode)
 	{
@@ -45,6 +73,7 @@ public class Phase1
 		FileReader fr = new FileReader(fi);
 		List<HackResult> d = parser.grok(fi);
     for(HackResult hackResult : d) {
+        startTime = Math.min(startTime, hackResult.timestamp);
         int hackLevel = hackResult.getLevel();
         for(HackItem hackItem : hackResult.hack.items) {
             if ( MEDIA.equals(hackItem.object) && hackItem.level > 0 ) {
@@ -57,7 +86,7 @@ public class Phase1
         }
     }
 		allHacks.addAll(d);
-    L.info("***** #allHacks="+allHacks.size());
+    L.info("***** #allHacks="+allHacks.size()+", startTime="+startTime);
 	}
 
   private static void plausi(String mark, File fi, HackItem item, HackResult hack)
@@ -95,6 +124,7 @@ public class Phase1
 	{
 		Map<String,Integer> types = new HashMap<>();
 		Map<Integer,Integer> levels = new HashMap<>();
+		Map<Integer,Integer> levelTotals = new HashMap<>();
 		Map<Integer,Integer> counts = new HashMap<>();
 		Map<Integer,Integer> noOfItems = new HashMap<>();
 		Map<Integer,Integer> noOfResos = new HashMap<>();
@@ -105,6 +135,8 @@ public class Phase1
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
 		Map<String,Integer> rareItems = new HashMap<>();
+		Map<String,Integer> hackers = new HashMap<>();
+		Map<String,Integer> weeks = new HashMap<>();
 		IMatrix<Integer,Integer> levelResults = new IMatrix<>();
 		Map<Integer,Stats1D> levelResults26 = new HashMap<>();
 		Map<Integer,Integer> levelCounts = new HashMap<>();
@@ -152,6 +184,10 @@ outerloop:
 		  int relLevelCountNPC = 0;
 		  int relLevelSumNPC = 0;
       int[] hackLevelSum = new int[9];
+      increment(hackers, hackResult.hacker.name, 1);
+      long week = ((long) (hackResult.timestamp/ WEEK))*WEEK * 1000;
+      increment(weeks, String.format("%ty-%<tm-%<td", week), 1);
+      increment(levelTotals, hackLevel, 1);
 		  for(HackItem hackItem : hackResult.hack.items) {
         int count = hackItem.quantity;
         sumCount += count;
@@ -218,6 +254,7 @@ outerloop:
     // if (longMode != LONG || totalCount < 10 ) return null;
     FullResult res = new FullResult(filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
+		res.summary("hack levels", levelTotals, totalCount);
 		res.summary("Items", noOfItems, totalCount);
 		res.summary("Resos", noOfResos, totalCount);
 		res.summary("Xmps", noOfXmps, totalCount);
@@ -238,19 +275,12 @@ outerloop:
             res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true);
         }
 		}
+		res.summary("Hackers", hackers, totalCount);
+		res.summary("Weeks", weeks, totalCount);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
     return res;
-  }
-
-  private final static Map<String,String> ABBR = new HashMap<>();
-  static {
-      ABBR.put("ADA Refactor", "ADARef");
-      ABBR.put("JARVIS Virus", "JARVIS");
-      ABBR.put("Link Amplifier", "LinkAmp");
-      ABBR.put("Resonator", "Reso");
-      ABBR.put("Force Amplifier", "ForceAmp");
   }
 
   public String shortItemName(HackItem item)
@@ -367,21 +397,130 @@ outerloop:
           allData.put(label, res);
           return res;
       }
+
+      public String toString() {
+          StringBuilder sb = new StringBuilder();
+          sb.append("F[");
+          Util.append(sb, filters);
+          sb.append("]");
+          return sb.toString();
+      }
   }
 
   private static void compareDist(FullResult base, FullResult res)
   {
       System.err.println(Util.append(new StringBuilder(), res.getFilters()));
+      double sum = 0.0;
+      double max = 0.0;
       for(String key : base.keys()) {
           DiscreteDistr d1 = base.get(key);
           DiscreteDistr d2 = res.get(key);
           Set freedom = d1.combinedKeys(d2);
           if ( d2 == null ) continue;
-          System.err.println(String.format("   gtest(%-17s)=%8.2g  %3d  %8.1g", key, d1.gtest(d2), 
-              freedom.size()-1, SFunc.critchi(0.95, freedom.size()-1)));
+          double gtest = d1.gtest(d2);
+          double chiBound = SFunc.critchi(0.95, freedom.size()-1);
+          double normed = gtest / chiBound;
+          System.err.println(String.format("   gtest(%-23s)=%8.2e  (%3d;%7.2e) %10.0f%%",
+                  key, gtest, freedom.size()-1, chiBound, normed));
+          if ( gtest > 0 ) {
+              sum += normed;
+              max = Math.max(max, normed);
+          }
       }
+      System.err.println(String.format("   === %8.2e/%8.2e", sum, max));
       System.err.println();
   }
+
+  private static void selectiveAnalysis(String key, List<FullResult> resultList)
+  {
+      FullResult[] results = resultList.toArray(new FullResult[resultList.size()]);
+      double[] score = new double[results.length];
+      double sum = 0.0;
+      int count = 0;
+      for(int i = 0; i < results.length; i++) {
+          FullResult res1 = results[i];
+          if ( res1 == null ) continue;
+          DiscreteDistr d1 = res1.get(key);
+          if ( d1 == null ) continue;
+          for(int j = i+1; j < results.length; j++) {
+              FullResult res2 = results[j];
+              if ( res2 == null ) continue;
+              if ( Math.abs(res1.getFilters().length - res2.getFilters().length) != 1 ) continue;
+              DiscreteDistr d2 = res2.get(key);
+              if ( d2 == null ) continue;
+              Set freedom = d1.combinedKeys(d2);
+              double gtest = DiscreteDistr.gtest(d1, d2);
+              if ( gtest <= 0.0 ) continue;
+              double chiBound = SFunc.critchi(0.95, freedom.size()-1);
+              if ( Double.isNaN(chiBound) ) continue;
+              double normed = gtest / chiBound;
+              if ( normed <= 1.0 ) continue;
+              double deltaScore = (normed-1.0)*normed;
+              score[i] += deltaScore/2.0;
+              score[j] += deltaScore/2.0;
+              sum += deltaScore;
+              count++;
+          }
+      }
+      double average = sum/count;
+      for(int i = 0; i < score.length; i++) if ( score[i] > 3.0 * average ) {
+          System.out.println(String.format("%s %2d %7.2g %s", key, i, score[i]/average, results[i]));
+      }
+  }
+
+  public List<FullResult> runFilterStack(int longMode, Summarizer o)
+      throws Exception
+  {
+    List<FullResult> res = new ArrayList<FullResult>();
+    FullResult base1 = stats(o, NO_FILTER);
+    res.add(base1);
+    if(longMode == LONG) {
+        for(HackFilter f0 : FRIEND_OR_FOE) {
+            FullResult res2 = stats(o, f0);
+            res.add(res2);
+        }
+    }
+    for(HackFilter tFilter : times) {
+        FullResult res1 = stats(o, tFilter);
+        res.add(res1);
+        for(HackFilter f0 : FRIEND_OR_FOE) {
+            FullResult res2 = stats(o, tFilter, f0);
+            res.add(res2);
+            //
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, R8_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER ));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL1_FILTER));
+            }
+            if(longMode != LONG) {
+                res.add(stats(o, tFilter, f0, L26_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL2_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL3_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL4_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL5_FILTER));
+            }
+            if(longMode == LONG) {
+                res.add(stats(o, tFilter, f0, HL6_FILTER));
+            }
+            res.add(stats(o, tFilter, f0, HL7_FILTER));
+            res.add(stats(o, tFilter, f0, HL8_FILTER));
+        }
+    }
+    o.close();
+    return res;
+	}
 
 	public static void main(String[] args)
 		throws Exception
@@ -393,28 +532,12 @@ outerloop:
     o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
 		for(String arg : args) p1.add(new File(arg));
     p1.dumpCSV("out.csv",";");
-    HackFilter[] times = new HackFilter[] {new LaterThanFilter("13-06-02"), new BeforeThanFilter("13-06-02")};
-    FullResult base1 = p1.stats(o, NO_FILTER);
-    for(HackFilter tFilter : times) {
-        FullResult res1 = p1.stats(o, tFilter);
-        compareDist(base1, res1);
-        for(HackFilter f0 : FRIEND_OR_FOE) {
-            FullResult res2 = p1.stats(o, tFilter, f0);
-            compareDist(res1, res2);
-            //
-            if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER );
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL1_FILTER);
-            if(longMode != LONG) p1.stats(o, tFilter, f0, L26_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL2_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL3_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL4_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL5_FILTER);
-            if(longMode == LONG) p1.stats(o, tFilter, f0, HL6_FILTER);
-            p1.stats(o, tFilter, f0, HL7_FILTER);
-            p1.stats(o, tFilter, f0, HL8_FILTER);
-        }
+    p1.runFilterStack(SHORT, o);
+    List<FullResult> allFRes = p1.runFilterStack(LONG, NO_SUMMARY);
+    FullResult f0 = allFRes.get(0);
+    for(String key : f0.keys()) {
+        selectiveAnalysis(key, allFRes);
     }
-    o.close();
-	}
+  }
+
 }
