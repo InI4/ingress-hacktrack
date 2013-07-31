@@ -5,12 +5,49 @@
   <xsl:output method="html" indent="no" />
 
   <xsl:template match="hs:hackstat">
-      <html>
-      <head>
-      <title>Hackstat <xsl:value-of select="hs:created"/></title>
+     <html>
+     <head>
+     <title>Hackstat <xsl:value-of select="hs:created"/></title>
+     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+     <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart"]});
+        function chartEl() { return document.getElementById('chart'); }
+        function allEl() { return document.getElementById('all'); }
+        function chartFun(title, data)
+        {
+            var data = google.visualization.arrayToDataTable(data);
+            data.sort(1);
+            var options = { 'title': title, width: 400, height: 400, is3D: true }; 
+            var chart = new google.visualization.PieChart(document.getElementById('gChart'));
+            chart.draw(data, options);
+            chartEl().style.display = 'block';
+            allEl().style.opacity = "0.3";
+        }
+        function closeChart()
+        {
+            chartEl().style.display = 'none';
+            allEl().style.opacity = "1.0";
+        }
+      </script>
       <style type="text/css">
         td, th {
             font-family: arial, sans-serif, helvetica;
+        }
+        .chart {
+            position: fixed;	
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            z-index: 10;	
+            display: none;
+            padding: 16px;
+            border: 1px solid #325580;
+            background-color: white;
+        }
+        .gChart { 
+            width: 400px;
+            height: 400px;
         }
         .data {
           font-size:8pt;
@@ -44,6 +81,11 @@
       </head>
       <body>
       <a name="top" />
+      <div id="chart" class="chart" >
+          <div id="gChart" class="gChart"> </div>
+          <div style="float:right" ><a href="javascript:void(0)" onclick="closeChart();" >Close</a></div>
+      </div>
+      <div id="all">
       <h1><xsl:value-of select="hs:created"/></h1>
       <!-- Does not work with Java7, but with old Saxon?! -->
       <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" />
@@ -83,7 +125,32 @@
             </th>
             <td> </td>
             <xsl:for-each select="//hs:column">
-                <th class="filter" colspan="2"><xsl:value-of select="hs:key"/></th>
+                <th class="filter" colspan="2">
+                <a href="javascript:void(0)" >
+                  <xsl:attribute name="onclick">
+                    <xsl:text>javascript:chartFun(</xsl:text>
+                    <xsl:text>'</xsl:text>
+                      <xsl:value-of select="$meStats" />
+                      <xsl:text> </xsl:text>
+                      <xsl:value-of select="hs:key" />
+                    <xsl:text>',[</xsl:text>
+                    <xsl:call-template name="js-data-row" >
+                        <xsl:with-param name="meStats" select="$meStats" />
+                        <xsl:with-param name="items" select="$items" />
+                        <xsl:with-param name="meColumn" select="." />
+                    </xsl:call-template>
+                    <xsl:text>])</xsl:text>
+                  </xsl:attribute>
+                  <xsl:choose>
+                    <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
+                        <xsl:value-of select="normalize-space(hs:key)"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        ALL!
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </a>
+                </th>
             </xsl:for-each>
             <td> </td>
             <th class="rowleg">
@@ -105,9 +172,41 @@
           </xsl:for-each>
       </xsl:for-each>
       </table>
+      </div>
       </body>
       </html>
   </xsl:template>
+
+
+  <xsl:template name="js-data-row">
+    <xsl:param name="meStats" />
+    <xsl:param name="items" />
+    <xsl:param name="meColumn" />
+    <xsl:variable name="meColumnKey" select="$meColumn/hs:key" />
+    <xsl:text>["",""]</xsl:text>
+    <xsl:for-each select="$items" >
+      <xsl:variable name="meKey" select="./hs:key" />
+      <!--
+      <xsl:variable name="val" select="//hs:column[hs:key=$meColumnKey]/hs:stats[hs:key=$meStats]/*[(name()='hs:item' or name()='hs:item2') and hs:key = $meKey]" />
+      -->
+      <xsl:variable name="val" select="$meColumn/hs:stats[hs:key=$meStats]/*[(name()='hs:item' or name()='hs:item2') and hs:key = $meKey]" />
+      <xsl:if test="$val">
+        <xsl:text>,["</xsl:text>
+        <xsl:value-of select="$meKey" />
+        <xsl:text>",</xsl:text>
+        <xsl:choose>
+          <xsl:when test="hs:absolute">
+            <xsl:value-of select="hs:absolute" />
+          </xsl:when>
+          <xsl:when test="hs:average">
+            <xsl:value-of select="round(hs:average)" />
+          </xsl:when>
+        </xsl:choose>
+        <xsl:text>]</xsl:text>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:template>
+
 
   <xsl:template name="data-row">
     <xsl:param name="meItem" />
