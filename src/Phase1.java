@@ -26,20 +26,20 @@ public class Phase1
 
   private final static int WEEK = 60*60*24*7;
 
-  private static HackFilter POST_JUNE_FILTER = null;
-  private static HackFilter PRE_JUNE_FILTER = null;
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
   static
   {
+      HackFilter F1 = null, F2 = null, F3 = null;
       try {
-        POST_JUNE_FILTER = new LaterThanFilter("13-06-02");
-        PRE_JUNE_FILTER = new BeforeThanFilter("13-06-02");
+        F3 = new LaterThanFilter("13-08-08");
+        F2 = new BetweenDateFilter("13-06-02", "13-08-08");
+        F1 = new BeforeThanFilter("13-06-02");
       }
       catch ( Exception ex ) {
           L.fatal("Cannot construct basic filters!");
       }
-      times = new HackFilter[] {POST_JUNE_FILTER, PRE_JUNE_FILTER};
+      times = new HackFilter[] {F3, F2, F1};
       ABBR.put("ADA Refactor", "ADARef");
       ABBR.put("JARVIS Virus", "JARVIS");
       ABBR.put("Link Amplifier", "LinkAmp");
@@ -269,10 +269,12 @@ outerloop:
 		res.summary2("Items x Level", crossItems, totalCount, true);
 		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true);
 		if(longMode == LONG) res.summary2("Hack Level vs Keys", hackLevelVsKeys, totalCount, true);
-		for(int i = 1; i <= 8; i++) {
-        if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false);
-        if ( longMode != LONG && i == 2 ) {
-            res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true);
+    if(longMode == LONG ) {
+        for(int i = 1; i <= 8; i++) {
+            if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false);
+            if ( longMode != LONG && i == 2 ) {
+                res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true);
+            }
         }
 		}
 		res.summary("Hackers", hackers, totalCount);
@@ -480,9 +482,13 @@ outerloop:
             res.add(res2);
         }
     }
+    int time = 0;
     for(HackFilter tFilter : times) {
-        FullResult res1 = stats(o, tFilter);
-        res.add(res1);
+        time++;
+        if ( longMode == LONG ) {
+            FullResult res1 = stats(o, tFilter);
+            res.add(res1);
+        }
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, tFilter, f0);
             res.add(res2);
@@ -496,7 +502,7 @@ outerloop:
             if(longMode == LONG) {
                 res.add(stats(o, tFilter, f0, HL1_FILTER));
             }
-            if(longMode != LONG) {
+            if(longMode != LONG && time == 1) {
                 res.add(stats(o, tFilter, f0, L26_FILTER));
             }
             if(longMode == LONG) {
@@ -514,8 +520,12 @@ outerloop:
             if(longMode == LONG) {
                 res.add(stats(o, tFilter, f0, HL6_FILTER));
             }
-            res.add(stats(o, tFilter, f0, HL7_FILTER));
-            res.add(stats(o, tFilter, f0, HL8_FILTER));
+            if(longMode == LONG || time == 1) {
+                res.add(stats(o, tFilter, f0, HL7_FILTER));
+            }
+            if(longMode == LONG || time == 1) {
+                res.add(stats(o, tFilter, f0, HL8_FILTER));
+            }
         }
     }
     o.close();
