@@ -17,7 +17,7 @@
         {
             var data = google.visualization.arrayToDataTable(data);
             data.sort(1);
-            var options = { 'title': title, width: 400, height: 400, is3D: true }; 
+            var options = { 'title': title, width: 650, height: 400, is3D: true }; 
             var chart = new google.visualization.PieChart(document.getElementById('gChart'));
             chart.draw(data, options);
             chartEl().style.display = 'block';
@@ -46,7 +46,7 @@
             background-color: white;
         }
         .gChart { 
-            width: 400px;
+            width: 650px;
             height: 400px;
         }
         .data {
