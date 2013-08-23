@@ -114,6 +114,17 @@ public interface HackFilter
         public String toString() { return "<"+dateStr; }
     }
 
+    public static class BetweenDateFilter
+        extends And
+    {
+        protected String s;
+        public BetweenDateFilter(String date1, String date2) throws ParseException
+        {
+            super(new LaterThanFilter(date1), new BeforeThanFilter(date2));
+            s = date1+":"+date2;
+        }
+        public String toString() { return s; }
+    }
 
     public final static HackFilter HL1_FILTER = new HLX_Filter() {
         public int level() { return 1; }
@@ -173,7 +184,7 @@ public interface HackFilter
           }
     }
 
-    public final static class And implements HackFilter {
+    public static class And implements HackFilter {
         private List<HackFilter> filters = new ArrayList<HackFilter>();
 
         public And(HackFilter... filters) {
@@ -193,7 +204,7 @@ public interface HackFilter
         }
     }
 
-    public final static class Or implements HackFilter {
+    public static class Or implements HackFilter {
         private List<HackFilter> filters = new ArrayList<HackFilter>();
 
         public Or(HackFilter... filters) {
@@ -213,7 +224,7 @@ public interface HackFilter
         }
     }
 
-    public final static class Not implements HackFilter {
+    public static class Not implements HackFilter {
         private HackFilter filter;
 
         public Not(HackFilter filter)
