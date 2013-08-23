@@ -7,6 +7,7 @@ public class HackItem
 		int level;
 		int quantity;
     String rarity;
+    int inventory;
 
     public boolean hasRarity() { return rarity != null && rarity.length() != 0; }
 
