@@ -28,18 +28,21 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
+  private final static String[] CHANGE_DATES = new String[] { "13-08-27", "13-08-08", "13-06-02" };
   static
   {
-      HackFilter F1 = null, F2 = null, F3 = null;
+      int cd1 = CHANGE_DATES.length-1;
+      times = new HackFilter[cd1+2];
+      int idx = cd1 + 1;
       try {
-        F3 = new LaterThanFilter("13-08-08");
-        F2 = new BetweenDateFilter("13-06-02", "13-08-08");
-        F1 = new BeforeThanFilter("13-06-02");
+          times[idx--] = new BeforeThanFilter(CHANGE_DATES[cd1]);
+          for(int i = cd1; i > 0; i--) {
+              times[idx--] = new BetweenDateFilter(CHANGE_DATES[i-1],CHANGE_DATES[i]);
+          }
+          times[idx--] = new LaterThanFilter(CHANGE_DATES[0]);
+      } catch  ( Exception ex ) {
+          L.warn("Cannot construct time filters", ex);
       }
-      catch ( Exception ex ) {
-          L.fatal("Cannot construct basic filters!");
-      }
-      times = new HackFilter[] {F3, F2, F1};
       ABBR.put("ADA Refactor", "ADARef");
       ABBR.put("JARVIS Virus", "JARVIS");
       ABBR.put("Link Amplifier", "LinkAmp");
@@ -91,7 +94,7 @@ public class Phase1
 
   private static void plausi(String mark, File fi, HackItem item, HackResult hack)
   {
-      L.warn(String.format("%s@%-36s %-4s %s",mark,fi+"."+hack._id,item,hack));
+      L.warn(String.format("%-12s@%13s:%-22s %-4s %s",mark, fi, hack._id,item,hack));
   }
 
   /**
