@@ -37,7 +37,7 @@ public class Phase1
       try {
           times[idx--] = new BeforeThanFilter(CHANGE_DATES[cd1]);
           for(int i = cd1; i > 0; i--) {
-              times[idx--] = new BetweenDateFilter(CHANGE_DATES[i-1],CHANGE_DATES[i]);
+              times[idx--] = new BetweenDateFilter(CHANGE_DATES[i],CHANGE_DATES[i-1]);
           }
           times[idx--] = new LaterThanFilter(CHANGE_DATES[0]);
       } catch  ( Exception ex ) {
@@ -485,9 +485,8 @@ outerloop:
             res.add(res2);
         }
     }
-    int time = 0;
-    for(HackFilter tFilter : times) {
-        time++;
+    for(int time = 0; time < times.length; time++) {
+        HackFilter tFilter = times[time];
         if ( longMode == LONG ) {
             FullResult res1 = stats(o, tFilter);
             res.add(res1);
@@ -505,7 +504,7 @@ outerloop:
             if(longMode == LONG) {
                 res.add(stats(o, tFilter, f0, HL1_FILTER));
             }
-            if(longMode != LONG && time == 1) {
+            if(longMode != LONG && time == 0 ) {
                 res.add(stats(o, tFilter, f0, L26_FILTER));
             }
             if(longMode == LONG) {
@@ -523,10 +522,10 @@ outerloop:
             if(longMode == LONG) {
                 res.add(stats(o, tFilter, f0, HL6_FILTER));
             }
-            if(longMode == LONG || time == 1) {
+            if(longMode == LONG || time == 0 ) {
                 res.add(stats(o, tFilter, f0, HL7_FILTER));
             }
-            if(longMode == LONG || time == 1) {
+            if(longMode == LONG || time == 0 ) {
                 res.add(stats(o, tFilter, f0, HL8_FILTER));
             }
         }
