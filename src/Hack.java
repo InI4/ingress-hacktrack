@@ -6,6 +6,7 @@ public class Hack
 {
 		String type;
 		List<HackItem> items;
+    boolean can_get_ultra = false;
 
 		public int getItemCount()
 		{

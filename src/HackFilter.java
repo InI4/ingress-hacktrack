@@ -239,8 +239,13 @@ public interface HackFilter
 
         public String toString()
         {
-            return "OR("+filter+")";
+            return "NOT("+filter+")";
         }
     }
+
+    public final static HackFilter CAN_GET_ULTRA = new HackFilter() {
+        public boolean accept(HackResult hr) { return hr.hasCanGetUltra(); }
+        public String toString() { return "canGetUltra"; }
+    };
 
 }

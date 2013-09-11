@@ -33,6 +33,7 @@ public class DataParser
         List<HackResult> res = new ArrayList<HackResult>(o.total_rows);
         int total = 0;
         int count = 0;
+        int canGetUltraCount = 0;
         for(_HackRow r : o.rows) {
             ++count;
             HackResult h = r.doc;
@@ -42,10 +43,11 @@ public class DataParser
                 continue;
             }
             if(L.isTraceEnabled())L.trace(String.format("  %5d %s\n", count, h));
+            if ( h.hasCanGetUltra() ) canGetUltraCount++;
             total += h.getItemCount();
             res.add(h);
         }
-        L.info("*** "+res.size()+" hacks for "+total+" items, lengthCheck="+(res.size() != o.total_rows ? "WARNING" : "OK"));
+        L.info("*** "+res.size()+" hacks for "+total+" items, canGetUltraCount="+canGetUltraCount+", lengthCheck="+(res.size() != o.total_rows ? "WARNING" : "OK"));
         return res;
     }
 

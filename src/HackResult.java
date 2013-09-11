@@ -62,5 +62,7 @@ public class HackResult
       for(HackItem item : hack.items) if ( item.level > 0 && item.level < hackLevel - 1 ) xtra = " XXX";
       return "Result[L"+hackLevel+"("+l+hacker.level+") "+sb+" "+hack+",sl="+sourceLine+","+hacker.name+xtra+"]";
 	}
+
+  public boolean hasCanGetUltra() { return hack.can_get_ultra; }
 }
 

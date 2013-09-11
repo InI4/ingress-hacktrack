@@ -28,7 +28,7 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
-  private final static String[] CHANGE_DATES = new String[] { "13-08-27", "13-08-08", "13-06-02" };
+  private final static String[] CHANGE_DATES = new String[] { "13-09-02", "13-08-27", "13-08-08", "13-06-02" };
   static
   {
       int cd1 = CHANGE_DATES.length-1;
@@ -48,6 +48,7 @@ public class Phase1
       ABBR.put("Link Amplifier", "LinkAmp");
       ABBR.put("Resonator", "Reso");
       ABBR.put("Force Amplifier", "ForceAmp");
+      ABBR.put("Ultra Strike", "UltraStr");
   }
 
   // No output without subsummarizers.
@@ -494,6 +495,9 @@ outerloop:
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, tFilter, f0);
             res.add(res2);
+            if ( time == 0 ) {
+                res.add(stats(o, tFilter, f0, CAN_GET_ULTRA));
+            }
             //
             if(longMode == LONG) {
                 res.add(stats(o, tFilter, f0, R8_FILTER));
