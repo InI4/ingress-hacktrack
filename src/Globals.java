@@ -19,6 +19,9 @@ public interface Globals
     public final static String LINK_AMP = "Link Amplifier";
     public final static String MULTI_HACK = "Multi-hack";
     public final static String TURRET = "Turret";
+    public final static String US = "Ultra Strike";
+    public final static String ADA = "ADA Refactor";
+    public final static String JARVIS = "JARVIS Virus";
 
     /* Commonness. */
     public final static String COMMON = "COMMON";

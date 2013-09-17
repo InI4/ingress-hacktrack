@@ -28,7 +28,7 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
-  private final static String[] CHANGE_DATES = new String[] { "13-09-02", "13-08-27", "13-08-08", "13-06-02" };
+  private final static String[] CHANGE_DATES = new String[] { "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
   static
   {
       int cd1 = CHANGE_DATES.length-1;
@@ -43,12 +43,12 @@ public class Phase1
       } catch  ( Exception ex ) {
           L.warn("Cannot construct time filters", ex);
       }
-      ABBR.put("ADA Refactor", "ADARef");
-      ABBR.put("JARVIS Virus", "JARVIS");
-      ABBR.put("Link Amplifier", "LinkAmp");
-      ABBR.put("Resonator", "Reso");
-      ABBR.put("Force Amplifier", "ForceAmp");
-      ABBR.put("Ultra Strike", "UltraStr");
+      ABBR.put(ADA, "ADARef");
+      ABBR.put(JARVIS, "JARVIS");
+      ABBR.put(LINK_AMP, "LinkAmp");
+      ABBR.put(RESO, "Reso");
+      ABBR.put(FORCE_AMP, "ForceAmp");
+      ABBR.put(US, "UltraStr");
   }
 
   // No output without subsummarizers.
@@ -135,6 +135,7 @@ public class Phase1
 		Map<Integer,Integer> noOfXmps = new HashMap<>();
 		Map<Integer,Integer> noOfOther = new HashMap<>();
 		Map<String,Integer> noOfPattern = new HashMap<>();
+		Map<String,Integer> noOfUSPattern = new HashMap<>();
 		Map<String,Integer> noOfPatternBig = new HashMap<>();
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
@@ -178,6 +179,7 @@ outerloop:
 		  int sumCount = 0;
 		  int sumResoCount = 0;
 		  int sumXmpCount = 0;
+		  int sumUSCount = 0;
 		  int sumOtherCount = 0;
 		  int sumKeyCount = 0;
 		  int sumShieldCount = 0;
@@ -201,6 +203,7 @@ outerloop:
         switch ( hackItem.object ) {
           case RESO: sumResoCount += hackItem.quantity; break;
           case XMP: sumXmpCount += hackItem.quantity; break;
+          case US: sumUSCount += hackItem.quantity; break;
           case KEY: sumKeyCount += hackItem.quantity; break;
           case SHIELD: sumShieldCount += hackItem.quantity; break;
           case CUBE: sumCubeCount += hackItem.quantity; break;
@@ -240,6 +243,7 @@ outerloop:
       increment(noOfResos, sumResoCount, 1);
       increment(noOfXmps, sumXmpCount, 1);
       increment(noOfOther, sumOtherCount, 1);
+      increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
       increment(noOfPattern, Integer.toString(sumResoCount) + sumXmpCount, 1);
       increment(noOfPatternBig, Integer.toString(sumResoCount) + sumXmpCount + sumOtherCount, 1);
 		  increment(noOfPatternHuge, Integer.toString(sumResoCount) + sumXmpCount + "-" + sumKeyCount + sumShieldCount, 1);
@@ -264,6 +268,7 @@ outerloop:
 		res.summary("Xmps", noOfXmps, totalCount);
 		res.summary("Other", noOfOther, totalCount);
 		res.summary("Short Patterns", noOfPattern, totalCount);
+		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount);
 		res.summary("Rare Items", rareItems, totalCount);
 		if(longMode == LONG) res.summary("Long Patterns", noOfPatternBig, totalCount);
 		if(longMode == LONG) res.summary("Huge Patterns", noOfPatternHuge, totalCount);
