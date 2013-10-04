@@ -286,7 +286,7 @@ outerloop:
             }
         }
 		}
-		res.summary("Hackers", hackers, totalCount);
+		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
 		res.summary("Weeks", weeks, totalCount);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());

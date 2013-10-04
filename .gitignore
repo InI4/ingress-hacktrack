@@ -5,3 +5,4 @@ classes/*
 logs/*
 .*.swp
 get.cmd
+private/*
