@@ -1,6 +1,6 @@
-set pf=_all_docs.js out.html
+set pf=out.html
 call fsn
-call git add %pf% out.html
+call git add %pf% 
 call git commit %pf% -m "New data to publish."
 call git push
 call git status
