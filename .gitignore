@@ -4,3 +4,4 @@ out*
 classes/*
 logs/*
 .*.swp
+get.cmd
