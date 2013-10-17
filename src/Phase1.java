@@ -28,7 +28,7 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
-  private final static String[] CHANGE_DATES = new String[] { "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
+  private final static String[] CHANGE_DATES = new String[] { "13-10-10", "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
   static
   {
       int cd1 = CHANGE_DATES.length-1;
@@ -79,18 +79,28 @@ public class Phase1
     for(HackResult hackResult : d) {
         startTime = Math.min(startTime, hackResult.timestamp);
         int hackLevel = hackResult.getLevel();
+        boolean isClear = true;
         for(HackItem hackItem : hackResult.hack.items) {
             if ( MEDIA.equals(hackItem.object) && hackItem.level > 0 ) {
                 hackItem.level = 0;
                 L.debug("Media fixed@"+hackResult);
             }
-            if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) plausi("WrongCube", fi, hackItem, hackResult);
-            else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) plausi("ItemTooHigh", fi, hackItem, hackResult);
-            else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) plausi("ItemTooLow", fi, hackItem, hackResult);
+            if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) {
+                plausi("WrongCube", fi, hackItem, hackResult);
+                isClear = false;
+            } else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) {
+                plausi("ItemTooHigh", fi, hackItem, hackResult);
+                isClear = false;
+            } else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) {
+                plausi("ItemTooLow", fi, hackItem, hackResult);
+                isClear = false;
+            }
+        }
+        if ( isClear ) {
+            allHacks.add(hackResult);
         }
     }
-		allHacks.addAll(d);
-    L.info("***** #allHacks="+allHacks.size()+", startTime="+startTime);
+    L.info("***** #allHacks="+allHacks.size()+" of "+d.size()+", startTime="+startTime);
 	}
 
   private static void plausi(String mark, File fi, HackItem item, HackResult hack)
@@ -485,7 +495,7 @@ outerloop:
     List<FullResult> res = new ArrayList<FullResult>();
     FullResult base1 = stats(o, NO_FILTER);
     res.add(base1);
-    if(longMode == LONG) {
+    if(true || longMode == LONG) {
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, f0);
             res.add(res2);
