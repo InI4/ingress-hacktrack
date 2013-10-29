@@ -183,6 +183,24 @@ public class XSLTSummarizer
         endElement("value");
     }
 
+    public void value(CharSequence msg, CharSequence v)
+        throws SAXException
+    {
+        startElement("value");
+        key(msg);
+        startElement("string"); text(v); endElement("string");
+        endElement("value");
+    }
+
+    public void value(CharSequence msg, long v)
+        throws SAXException
+    {
+        startElement("value");
+        key(msg);
+        startElement("int"); text(Long.toString(v)); endElement("int");
+        endElement("value");
+    }
+
     public void finish(int sum)
         throws SAXException
     {

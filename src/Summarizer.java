@@ -16,5 +16,7 @@ public interface Summarizer
     public void item(Object key, Stats1D h) throws Exception;
     public void finish(int sum) throws Exception;
     public void value(CharSequence label, double value) throws Exception;
+    public void value(CharSequence label, CharSequence value) throws Exception;
+    public void value(CharSequence label, long value) throws Exception;
     public void close() throws Exception;
 }

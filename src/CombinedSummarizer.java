@@ -45,6 +45,12 @@ public class CombinedSummarizer
     public void value(CharSequence label, double value) throws Exception {
         for(Summarizer s : sums) s.value(label, value);
     }
+    public void value(CharSequence label, CharSequence value) throws Exception {
+        for(Summarizer s : sums) s.value(label, value);
+    }
+    public void value(CharSequence label, long value) throws Exception {
+        for(Summarizer s : sums) s.value(label, value);
+    }
     public void close() throws Exception {
         for(Summarizer s : sums) s.close();
     }

@@ -87,6 +87,14 @@
       </div>
       <div id="all">
       <h1><xsl:value-of select="hs:created"/></h1>
+      <table>
+      <xsl:for-each select="hs:value">
+        <tr>
+          <td class="first"><xsl:value-of select="hs:key" /> : </td>
+          <td><xsl:value-of select="hs:*[2]" /></td>
+        </tr>
+      </xsl:for-each>
+      </table>
       <!-- Does not work with Java7, but with old Saxon?! -->
       <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" />
       Statistics: 

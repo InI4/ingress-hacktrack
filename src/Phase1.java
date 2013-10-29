@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 
 import org.apache.log4j.Logger;
@@ -25,6 +26,8 @@ public class Phase1
   private final static Logger L = Logger.getLogger(Phase1.class);
 
   private final static int WEEK = 60*60*24*7;
+
+  public final static String WEEKS = "Weeks";
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
@@ -65,6 +68,7 @@ public class Phase1
   private int longMode;
 
   private double startTime = Double.MAX_VALUE;
+  private double endTime = 0;
 
 	public Phase1(int longMode)
 	{
@@ -78,6 +82,7 @@ public class Phase1
 		List<HackResult> d = parser.grok(fi);
     for(HackResult hackResult : d) {
         startTime = Math.min(startTime, hackResult.timestamp);
+        endTime = Math.max(endTime, hackResult.timestamp);
         int hackLevel = hackResult.getLevel();
         boolean isClear = true;
         for(HackItem hackItem : hackResult.hack.items) {
@@ -100,7 +105,7 @@ public class Phase1
             allHacks.add(hackResult);
         }
     }
-    L.info("***** #allHacks="+allHacks.size()+" of "+d.size()+", startTime="+startTime);
+    L.info(String.format("***** #allHacks=%d of %d, endTime=%tc",allHacks.size(),d.size(),1000*(long)endTime));
 	}
 
   private static void plausi(String mark, File fi, HackItem item, HackResult hack)
@@ -297,7 +302,7 @@ outerloop:
         }
 		}
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
-		res.summary("Weeks", weeks, totalCount);
+		res.summary(WEEKS, weeks, totalCount);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
@@ -320,7 +325,8 @@ outerloop:
   {
       private HackFilter[] filters;
       private Summarizer out;
-      private HashMap<String,DiscreteDistr> allData = new HashMap<>();
+      private HashMap<String,DiscreteDistr> allData = new LinkedHashMap<>();
+      private HashMap<String,Double> distrDelta = new HashMap<>();
 
       private FullResult(HackFilter[] filters, Summarizer out)
       {
@@ -492,9 +498,13 @@ outerloop:
   public List<FullResult> runFilterStack(int longMode, Summarizer o)
       throws Exception
   {
+    o.value("Last Hack", String.format("%tF %<tT", 1000*(long) endTime));
+    o.value("Total Data", allHacks.size());
     List<FullResult> res = new ArrayList<FullResult>();
-    FullResult base1 = stats(o, NO_FILTER);
-    res.add(base1);
+    if ( longMode == LONG ) {
+        FullResult base1 = stats(o, NO_FILTER);
+        res.add(base1);
+    }
     if(true || longMode == LONG) {
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, f0);
@@ -510,7 +520,7 @@ outerloop:
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, tFilter, f0);
             res.add(res2);
-            if ( time == 0 ) {
+            if ( time == 0 && f0 == FRIEND_FILTER ) {
                 res.add(stats(o, tFilter, f0, CAN_GET_ULTRA));
             }
             //
@@ -549,9 +559,43 @@ outerloop:
             }
         }
     }
+    // Postprocessing for distribution deltas
+    FullResult[] results = res.toArray(new FullResult[res.size()]);
+    for(int i = 0; i < results.length; i++) {
+        FullResult res1 = results[i];
+        for(int j = i+1; j < results.length; j++) {
+            FullResult res2 = results[j];
+            if ( !similarFilter(res1, res2) ) continue;
+            for(String key : res1.keys()) if ( !WEEKS.equals(key) ) {
+                DiscreteDistr d1 = res1.get(key);
+                DiscreteDistr d2 = res2.get(key);
+                Set freedom = d1.combinedKeys(d2);
+                if ( freedom.size() < 2 ) continue;
+                // to rigid double gtest = d1.gtest(d2);
+                double gtest =DiscreteDistr.gtest(d1, d2);
+                double chiBound = SFunc.critchi(0.95, freedom.size()-1);
+                double normed = gtest / chiBound;
+                res1.distrDelta.put(key, normed);
+System.err.format("%s:%s(%15s) %10.4f %9.4f (%2d) %9.4f\n", res1, res2, key, gtest, chiBound, freedom.size()-1, normed);                
+            }
+            break;
+        }
+    }
     o.close();
     return res;
 	}
+
+  public static boolean similarFilter(FullResult res1, FullResult res2)
+  {
+      if ( res1 == null || res2 == null || res1.filters == null || res2.filters == null ) return false;
+      if ( res1.filters.length != res2.filters.length ) return false;
+      if ( !(res1.filters[0] instanceof DateFilter || res1.filters[0] instanceof BetweenDateFilter) ) return false;
+      if ( !(res2.filters[0] instanceof DateFilter || res2.filters[0] instanceof BetweenDateFilter) ) return false;
+      for(int i = 1; i < res1.filters.length; i++) {
+          if ( res1.filters[i] != res2.filters[i] ) return false;
+      }
+      return true;
+  }
 
 	public static void main(String[] args)
 		throws Exception

@@ -76,6 +76,18 @@ public class AppendableSummarizer
         a.append(String.format("\n   ====== %s = %9.2g\n", msg, v));
     }
 
+    public void value(CharSequence msg, CharSequence v)
+        throws IOException
+    {
+        a.append(String.format("\n   ====== %s = %s\n", msg, v));
+    }
+
+    public void value(CharSequence msg, long v)
+        throws IOException
+    {
+        a.append(String.format("\n   ====== %s = %d\n", msg, v));
+    }
+
     public void finish(int sum)
         throws IOException
     {

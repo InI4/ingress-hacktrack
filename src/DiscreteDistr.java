@@ -82,6 +82,7 @@ public class DiscreteDistr<T>
         for(T t : keys) {
             double seen = d2.getRaw(t);
             double expected = d2Total * get(t);
+// System.out.format("seen=%9.4f, expected=%9.4f, %9.4f\n", seen, expected, seen * Math.log(seen/expected));
             if ( yatesCorrection ) {
                 // Yates continuity correction, adjust seen 0.5 towards expectation.
                 if (expected + 0.5 < seen)
@@ -106,8 +107,37 @@ public class DiscreteDistr<T>
     }
 
     /*
-    * XXX Junk XXX
+    * (Fairly) direct calculation of a two sided comparison.
     */
+    public static <T> double gtest(DiscreteDistr<T> d1, DiscreteDistr<T> d2)
+    {
+        Set<T> keys = d1.combinedKeys(d2);
+        long[] colSums = new long[keys.size()];
+        long rowSums1 = 0, rowSums2 = 0;
+        int i = 0;
+        for(T key : keys) {
+            long o1 = d1.getRaw(key);
+            long o2 = d2.getRaw(key);
+            rowSums1 += o1;
+            rowSums2 += o2;
+            colSums[i] = o1 + o2;
+            i++;
+        }
+        double n = rowSums1 + rowSums2;
+        double sum = 0.0;
+        i = 0;
+        for(T key : keys) {
+            double h = n / colSums[i++];
+            long o1 = d1.getRaw(key);
+            if ( o1 != 0 ) sum += o1 * Math.log(h*o1/rowSums1);
+            long o2 = d2.getRaw(key);
+            if ( o2 != 0 ) sum += o2 * Math.log(h*o2/rowSums2);
+        }
+        return 2.0 * sum;
+    }
+
+    /*
+    * XXX Junk XXX Information theoretic more instructive, but undebugged version
     public static <T> double gtest(DiscreteDistr<T> d1, DiscreteDistr<T> d2)
     {
         Set<T> keys = d1.combinedKeys(d2);
@@ -123,6 +153,7 @@ public class DiscreteDistr<T>
             colSums[i] = o1 + o2;
             cross[0][i] = o1;
             cross[1][i] = o2;
+            i++;
         }
         return 2.0 * (rowSums1+rowSums2)
               *(entropy(rowSums1,rowSums2)+entropy(colSums)-entropy(cross));
@@ -160,5 +191,6 @@ public class DiscreteDistr<T>
         for (int i = 0; i < k.length; i++) sum += k[i];
         return sum;
     }
+    */
 
 }
