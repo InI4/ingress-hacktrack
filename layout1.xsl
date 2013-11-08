@@ -125,39 +125,50 @@
                   </xsl:attribute>
                 </a>
                 <xsl:value-of select="."/>
+                <!--
                 <div class="small">
                     <xsl:value-of select="following::hs:description" />
                 </div>
+                -->
                 <br />
-                <a href="#top"><sub>^</sub></a>
+                <a href="#top"><sup>^top</sup></a>
             </th>
             <td> </td>
             <xsl:for-each select="//hs:column">
+                <xsl:variable name="colName" select="hs:key/text()" />
                 <th class="filter" colspan="2">
-                <a href="javascript:void(0)" >
-                  <xsl:attribute name="onclick">
-                    <xsl:text>javascript:chartFun(</xsl:text>
-                    <xsl:text>'</xsl:text>
-                      <xsl:value-of select="$meStats" />
-                      <xsl:text> </xsl:text>
-                      <xsl:value-of select="hs:key" />
-                    <xsl:text>',[</xsl:text>
-                    <xsl:call-template name="js-data-row" >
-                        <xsl:with-param name="meStats" select="$meStats" />
-                        <xsl:with-param name="items" select="$items" />
-                        <xsl:with-param name="meColumn" select="." />
-                    </xsl:call-template>
-                    <xsl:text>])</xsl:text>
-                  </xsl:attribute>
-                  <xsl:choose>
-                    <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
-                        <xsl:value-of select="normalize-space(hs:key)"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        ALL!
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </a>
+                  <div style="vertical-align:top">
+                    <a href="javascript:void(0)" style="float:top">
+                      <xsl:attribute name="onclick">
+                        <xsl:text>javascript:chartFun(</xsl:text>
+                        <xsl:text>'</xsl:text>
+                          <xsl:value-of select="$meStats" />
+                          <xsl:text> </xsl:text>
+                          <xsl:value-of select="hs:key" />
+                        <xsl:text>',[</xsl:text>
+                        <xsl:call-template name="js-data-row" >
+                            <xsl:with-param name="meStats" select="$meStats" />
+                            <xsl:with-param name="items" select="$items" />
+                            <xsl:with-param name="meColumn" select="." />
+                        </xsl:call-template>
+                        <xsl:text>])</xsl:text>
+                      </xsl:attribute>
+                      <xsl:choose>
+                        <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
+                            <xsl:value-of select="normalize-space(hs:key)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            ALL!
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </a>
+                  </div>
+                  <xsl:variable name="av" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />
+                  <xsl:if test="$av">
+                    <div style="vertical-align:bottom">
+                      mean=<xsl:value-of select="format-number($av,'0.00')" />
+                    </div>
+                  </xsl:if>
                 </th>
             </xsl:for-each>
             <td> </td>
@@ -167,7 +178,7 @@
                 </xsl:attribute>
               <xsl:value-of select="."/>
               <br />
-              <a href="#top"><sub>^</sub></a>
+              <a href="#top"><sup>^top</sup></a>
             </th>
           </tr>
           <xsl:for-each select="$items" >

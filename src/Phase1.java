@@ -373,8 +373,9 @@ outerloop:
         }
         out.start(label);
         String description = String.format("total=%d, norm=%d ", sum, norm);
-        if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
+        // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
         out.description(description);
+        if ( allInt && average ) out.value("_average", hsum/norm);
         out.setNorms(f, f2);
         DiscreteDistr distr = prepareDistr(label);
         for(Object key : keys) {
@@ -408,8 +409,9 @@ outerloop:
         }
         out.start(label);
         String description = String.format("total=%d, norm=%d ", sum, norm);
-        if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
+        // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
         out.description(description);
+        if ( allInt && average ) out.value("_average", hsum/norm);
         DiscreteDistr distr = prepareDistr(label);
         for(Object key : keys) {
             out.item(key, data.get(key));
