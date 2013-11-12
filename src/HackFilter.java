@@ -34,6 +34,11 @@ public interface HackFilter
             public String toString() { return "NEUTRAL"; }
         };
 
+    public final static HackFilter HASKEY_FILTER = new HackFilter() {
+            public boolean accept(HackResult hr) { return hr.hack.nkeys > 0; }
+            public String toString() { return "hasKey"; }
+        };
+
     public final static HackFilter[] FRIEND_OR_FOE = new HackFilter[]{ FRIEND_FILTER, FOE_FILTER, NEUTRAL_FILTER};
 
     public final static HackFilter R8_FILTER = new HackFilter() {

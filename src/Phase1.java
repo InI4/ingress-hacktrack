@@ -142,6 +142,7 @@ public class Phase1
       throws Exception
 	{
 		Map<String,Integer> types = new HashMap<>();
+		Map<Integer,Integer> nkeys = new HashMap<>();
 		Map<Integer,Integer> levels = new HashMap<>();
 		Map<Integer,Integer> levelTotals = new HashMap<>();
 		Map<Integer,Integer> counts = new HashMap<>();
@@ -205,6 +206,7 @@ outerloop:
 		  int relLevelCountNPC = 0;
 		  int relLevelSumNPC = 0;
       int[] hackLevelSum = new int[9];
+      increment(nkeys, hackResult.hack.nkeys, 1);
       increment(hackers, hackResult.hacker.name, 1);
       long week = ((long) (hackResult.timestamp/ WEEK))*WEEK * 1000;
       increment(weeks, String.format("%ty-%<tm-%<td", week), 1);
@@ -277,11 +279,12 @@ outerloop:
     // if (longMode != LONG || totalCount < 10 ) return null;
     FullResult res = new FullResult(filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
-		res.summary("hack levels", levelTotals, totalCount);
+		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount);
 		res.summary("Items", noOfItems, totalCount);
 		res.summary("Resos", noOfResos, totalCount);
 		res.summary("Xmps", noOfXmps, totalCount);
 		res.summary("Other", noOfOther, totalCount);
+		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount);
 		res.summary("Short Patterns", noOfPattern, totalCount);
 		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount);
 		res.summary("Rare Items", rareItems, totalCount);
@@ -302,7 +305,7 @@ outerloop:
         }
 		}
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
-		res.summary(WEEKS, weeks, totalCount);
+		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
@@ -523,7 +526,11 @@ outerloop:
             FullResult res2 = stats(o, tFilter, f0);
             res.add(res2);
             if ( time == 0 && f0 == FRIEND_FILTER ) {
+                res.add(stats(o, tFilter, f0, HASKEY_FILTER));
                 res.add(stats(o, tFilter, f0, CAN_GET_ULTRA));
+            }
+            else if ( time == 0 && f0 == FOE_FILTER ) {
+                res.add(stats(o, tFilter, f0, HASKEY_FILTER));
             }
             //
             if(longMode == LONG) {
