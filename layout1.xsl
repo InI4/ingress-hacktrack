@@ -3,8 +3,11 @@
                 xmlns:hs="de.spieleck.ingress.hackstat"
                 version="1.0">
   <xsl:output method="html" indent="no" />
+  <xsl:param name="filter" select="''" />
+  <xsl:param name="antifilter" select="'NEUTRAL'" />
 
   <xsl:template match="hs:hackstat">
+     <xsl:message>Filter=<xsl:value-of select="$filter"/>-<xsl:value-of select="$antifilter"/></xsl:message>
      <html>
      <head>
      <title>Hackstat <xsl:value-of select="hs:created"/></title>
@@ -96,7 +99,7 @@
       </xsl:for-each>
       </table>
       <!-- Does not work with Java7, but with old Saxon?! -->
-      <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" />
+      <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
       Statistics: 
       <xsl:for-each select="$all-stats">
           <xsl:variable name="meStats" select="." />
@@ -134,7 +137,7 @@
                 <a href="#top"><sup>^top</sup></a>
             </th>
             <td> </td>
-            <xsl:for-each select="//hs:column">
+            <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
                 <xsl:variable name="colName" select="hs:key/text()" />
                 <th class="filter" colspan="2">
                   <div style="vertical-align:top">
@@ -234,7 +237,8 @@
     <th class="rowleg2">
         <xsl:value-of select="$meKey"/>
     </th>
-    <xsl:for-each select="//hs:column">
+    <!-- <xsl:for-each select="//hs:column"> -->
+    <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
         <xsl:variable name="me" select="hs:stats[hs:key=$meStats]/*[(name()='hs:item' or name()='hs:item2') and hs:key = $meKey]" />
         <xsl:choose>
           <xsl:when test="$me/hs:absolute">
