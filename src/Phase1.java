@@ -31,7 +31,7 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
-  private final static String[] CHANGE_DATES = new String[] { "13-12-03", "13-10-10", "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
+  private final static String[] CHANGE_DATES = new String[] { "13-12-27", "13-12-03", "13-10-10", "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
   static
   {
       int cd1 = CHANGE_DATES.length-1;
