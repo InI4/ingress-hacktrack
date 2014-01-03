@@ -3,6 +3,7 @@ package de.spieleck.ingress.hackstat;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.List;
@@ -31,18 +32,25 @@ public class Phase1
 
   private static HackFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
-  private final static String[] CHANGE_DATES = new String[] { "13-12-27", "13-12-03", "13-10-10", "13-09-04", "13-08-27", "13-08-08", "13-06-02" };
   static
   {
-      int cd1 = CHANGE_DATES.length-1;
-      times = new HackFilter[cd1+2];
-      int idx = cd1 + 1;
       try {
-          times[idx--] = new BeforeThanFilter(CHANGE_DATES[cd1]);
-          for(int i = cd1; i > 0; i--) {
-              times[idx--] = new BetweenDateFilter(CHANGE_DATES[i],CHANGE_DATES[i-1]);
+          BufferedReader br = new BufferedReader(new FileReader("dates.dat"));
+          ArrayList<String> changeDates = new ArrayList<>();
+          String line;
+          while ( ( line = br.readLine() ) != null ) {
+              changeDates.add(line.trim());
           }
-          times[idx--] = new LaterThanFilter(CHANGE_DATES[0]);
+          br.close();
+          Collections.sort(changeDates);
+          int noOfDates = changeDates.size();
+          times = new HackFilter[noOfDates+1];
+          int idx = noOfDates;
+          times[idx--] = new BeforeThanFilter(changeDates.get(0));
+          for(int i = 1; i < noOfDates; i++) {
+              times[idx--] = new BetweenDateFilter(changeDates.get(i-1), changeDates.get(i));
+          }
+          times[idx--] = new LaterThanFilter(changeDates.get(noOfDates-1));
       } catch  ( Exception ex ) {
           L.warn("Cannot construct time filters", ex);
       }
