@@ -160,6 +160,7 @@ public class Phase1
 		Map<Integer,Integer> noOfOther = new HashMap<>();
 		Map<String,Integer> noOfPattern = new HashMap<>();
 		Map<String,Integer> noOfUSPattern = new HashMap<>();
+		Map<String,Integer> noResoPattern = new HashMap<>();
 		Map<String,Integer> noOfPatternBig = new HashMap<>();
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
@@ -214,6 +215,7 @@ outerloop:
 		  int relLevelCountNPC = 0;
 		  int relLevelSumNPC = 0;
       int[] hackLevelSum = new int[9];
+      int[] resoPattern = new int[4];
       increment(nkeys, hackResult.hack.nkeys, 1);
       increment(hackers, hackResult.hacker.name, 1);
       long week = ((long) (hackResult.timestamp/ WEEK))*WEEK * 1000;
@@ -243,6 +245,9 @@ outerloop:
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
           int relLevel = hackItem.level - hackLevel;
+          if ( RESO.equals(hackItem.object) ) {
+              resoPattern[relLevel+1] = count;
+          }
           fullItem += "."+relLevel;
           relLevelCount++;
           relLevelSum += relLevel;
@@ -269,6 +274,7 @@ outerloop:
       increment(noOfXmps, sumXmpCount, 1);
       increment(noOfOther, sumOtherCount, 1);
       increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
+      increment(noResoPattern, ia2str(resoPattern), 1);
       increment(noOfPattern, Integer.toString(sumResoCount) + sumXmpCount, 1);
       increment(noOfPatternBig, Integer.toString(sumResoCount) + sumXmpCount + sumOtherCount, 1);
 		  increment(noOfPatternHuge, Integer.toString(sumResoCount) + sumXmpCount + "-" + sumKeyCount + sumShieldCount, 1);
@@ -290,6 +296,7 @@ outerloop:
 		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount);
 		res.summary("Items", noOfItems, totalCount);
 		res.summary("Resos", noOfResos, totalCount);
+		res.summary("ResoPatterns", noResoPattern, totalCount);
 		res.summary("Xmps", noOfXmps, totalCount);
 		res.summary("Other", noOfOther, totalCount);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount);
@@ -318,6 +325,13 @@ outerloop:
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
     return res;
+  }
+
+  public static String ia2str(int[] x)
+  {
+      StringBuilder res = new StringBuilder(x.length);
+      for(int i : x) res.append(i);
+      return res.toString();
   }
 
   public String shortItemName(HackItem item)
