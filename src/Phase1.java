@@ -161,6 +161,7 @@ public class Phase1
 		Map<String,Integer> noOfPattern = new HashMap<>();
 		Map<String,Integer> noOfUSPattern = new HashMap<>();
 		Map<String,Integer> noResoPattern = new HashMap<>();
+		Map<String,Integer> noXMPPattern = new HashMap<>();
 		Map<String,Integer> noOfPatternBig = new HashMap<>();
 		Map<String,Integer> noOfPatternHuge = new HashMap<>();
 		Map<String,Integer> levelPattern = new HashMap<>();
@@ -173,9 +174,13 @@ public class Phase1
 		Map<String,Stats1D> crossItems = new HashMap<>();
 		Map<Integer,Stats1D> playerLevelVsKeys = new HashMap<>();
 		Map<Integer,Stats1D> hackLevelVsKeys = new HashMap<>();
+		Map<String,Integer> getKeysStatsHas = new HashMap<>();
+		Map<String,Integer> getKeysStatsHasnot = new HashMap<>();
 		Stats2D overHacks = new Stats2D();
 		Stats2D overHacksNPC = new Stats2D();
 		int totalCount = 0;
+		int totalCountHas = 0;
+		int totalCountHasnot = 0;
     // XXX Stupid duplication of code to determine all possible item types to count zeros!!
     Set<String> allFullItems = new HashSet<>();
 outerloop1:    
@@ -201,6 +206,8 @@ outerloop:
 			  if ( !fi.accept(hackResult) ) continue outerloop;
 		  }
 		  totalCount++;
+      boolean hasKey = hackResult.hack.nkeys > 0;
+      if ( hasKey ) totalCountHas++; else totalCountHasnot++;
 		  int sumCount = 0;
 		  int sumResoCount = 0;
 		  int sumXmpCount = 0;
@@ -216,11 +223,13 @@ outerloop:
 		  int relLevelSumNPC = 0;
       int[] hackLevelSum = new int[9];
       int[] resoPattern = new int[4];
+      int[] xmpPattern = new int[4];
       increment(nkeys, hackResult.hack.nkeys, 1);
       increment(hackers, hackResult.hacker.name, 1);
       long week = ((long) (hackResult.timestamp/ WEEK))*WEEK * 1000;
       increment(weeks, String.format("%ty-%<tm-%<td", week), 1);
       increment(levelTotals, hackLevel, 1);
+      boolean hackContainsKey = false;
 		  for(HackItem hackItem : hackResult.hack.items) {
         int count = hackItem.quantity;
         sumCount += count;
@@ -231,7 +240,7 @@ outerloop:
           case RESO: sumResoCount += hackItem.quantity; break;
           case XMP: sumXmpCount += hackItem.quantity; break;
           case US: sumUSCount += hackItem.quantity; break;
-          case KEY: sumKeyCount += hackItem.quantity; break;
+          case KEY: sumKeyCount += hackItem.quantity; hackContainsKey = true; break;
           case SHIELD: sumShieldCount += hackItem.quantity; break;
           case CUBE: sumCubeCount += hackItem.quantity; break;
         }
@@ -245,9 +254,8 @@ outerloop:
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
           int relLevel = hackItem.level - hackLevel;
-          if ( RESO.equals(hackItem.object) ) {
-              resoPattern[relLevel+1] = count;
-          }
+          if ( RESO.equals(hackItem.object) ) resoPattern[relLevel+1] = count;
+          if ( XMP.equals(hackItem.object) ) xmpPattern[relLevel+1] = count;
           fullItem += "."+relLevel;
           relLevelCount++;
           relLevelSum += relLevel;
@@ -275,12 +283,14 @@ outerloop:
       increment(noOfOther, sumOtherCount, 1);
       increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
       increment(noResoPattern, ia2str(resoPattern), 1);
+      increment(noXMPPattern, ia2str(xmpPattern), 1);
       increment(noOfPattern, Integer.toString(sumResoCount) + sumXmpCount, 1);
       increment(noOfPatternBig, Integer.toString(sumResoCount) + sumXmpCount + sumOtherCount, 1);
 		  increment(noOfPatternHuge, Integer.toString(sumResoCount) + sumXmpCount + "-" + sumKeyCount + sumShieldCount, 1);
 		  increment(noOfItems, sumCount, 1);
       increment(playerLevelVsKeys, hackResult.getPlayerLevel(), sumKeyCount);
       increment(hackLevelVsKeys, hackLevel, sumKeyCount);
+      increment(hasKey ? getKeysStatsHas : getKeysStatsHasnot, hackContainsKey ?"gets":"----", 1);
 		  int overLevel = hackResult.getOverLevel();
 		  if ( relLevelCount > 0 ) {
 			  overHacks.add(overLevel,1.0*relLevelSum/relLevelCount);
@@ -298,6 +308,7 @@ outerloop:
 		res.summary("Resos", noOfResos, totalCount);
 		res.summary("ResoPatterns", noResoPattern, totalCount);
 		res.summary("Xmps", noOfXmps, totalCount);
+		res.summary("XMPPatterns", noXMPPattern, totalCount);
 		res.summary("Other", noOfOther, totalCount);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount);
 		res.summary("Short Patterns", noOfPattern, totalCount);
@@ -321,6 +332,8 @@ outerloop:
 		}
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
 		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount);
+		res.summary("With Key", getKeysStatsHas, totalCountHas);
+		res.summary("WO Keys", getKeysStatsHasnot, totalCountHasnot);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
@@ -330,6 +343,9 @@ outerloop:
   public static String ia2str(int[] x)
   {
       StringBuilder res = new StringBuilder(x.length);
+      int sum = 0;
+      for(int i : x) sum += i;
+      res.append(sum).append(": ");
       for(int i : x) res.append(i);
       return res.toString();
   }
@@ -531,8 +547,6 @@ outerloop:
     if ( longMode == LONG ) {
         FullResult base1 = stats(o, NO_FILTER);
         res.add(base1);
-    }
-    if(true || longMode == LONG) {
         for(HackFilter f0 : FRIEND_OR_FOE) {
             FullResult res2 = stats(o, f0);
             res.add(res2);
@@ -548,11 +562,11 @@ outerloop:
             FullResult res2 = stats(o, tFilter, f0);
             res.add(res2);
             if ( time == 0 && f0 == FRIEND_FILTER ) {
-                res.add(stats(o, tFilter, f0, HASKEY_FILTER));
+                // handled differently now res.add(stats(o, tFilter, f0, HASKEY_FILTER));
                 res.add(stats(o, tFilter, f0, CAN_GET_ULTRA));
             }
             else if ( time == 0 && f0 == FOE_FILTER ) {
-                res.add(stats(o, tFilter, f0, HASKEY_FILTER));
+                // handled differently now res.add(stats(o, tFilter, f0, HASKEY_FILTER));
             }
             //
             if(longMode == LONG) {
