@@ -91,6 +91,11 @@ public interface HackFilter
             this.dateStr = dateStr;
             date = DF.parse(dateStr).getTime() / 1000L;
         }
+        public DateFilter(long date) 
+        {
+            this.date = date;
+            dateStr = String.format("%ty-%<tm-%<td_%<tH:%<tM", date * 1000);
+        }
 
         public abstract boolean accept(HackResult hr); 
        
@@ -103,6 +108,10 @@ public interface HackFilter
         public LaterThanFilter(String dateStr) throws ParseException
         {
             super(dateStr);
+        }
+        public LaterThanFilter(long date) 
+        {
+            super(date);
         }
         public boolean accept(HackResult hr) { return hr.timestamp > date; }
         public String toString() { return ">"+dateStr; }

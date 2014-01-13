@@ -50,6 +50,7 @@ public class Phase1
           for(int i = 1; i < noOfDates; i++) {
               times[idx--] = new BetweenDateFilter(changeDates.get(i-1), changeDates.get(i));
           }
+          assert(idx == 0);
           times[idx--] = new LaterThanFilter(changeDates.get(noOfDates-1));
       } catch  ( Exception ex ) {
           L.warn("Cannot construct time filters", ex);
@@ -552,55 +553,59 @@ outerloop:
             res.add(res2);
         }
     }
+    HackFilter timeFilter;
+    timeFilter = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
+    FullResult res0 = stats(o, timeFilter, FRIEND_FILTER);
+    res.add(res0);
     for(int time = 0; time < times.length; time++) {
-        HackFilter tFilter = times[time];
+        timeFilter = times[time];
         if ( longMode == LONG ) {
-            FullResult res1 = stats(o, tFilter);
+            FullResult res1 = stats(o, timeFilter);
             res.add(res1);
         }
         for(HackFilter f0 : FRIEND_OR_FOE) {
-            FullResult res2 = stats(o, tFilter, f0);
+            FullResult res2 = stats(o, timeFilter, f0);
             res.add(res2);
             if ( time == 0 && f0 == FRIEND_FILTER ) {
-                // handled differently now res.add(stats(o, tFilter, f0, HASKEY_FILTER));
-                res.add(stats(o, tFilter, f0, CAN_GET_ULTRA));
+                // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
+                res.add(stats(o, timeFilter, f0, CAN_GET_ULTRA));
             }
             else if ( time == 0 && f0 == FOE_FILTER ) {
-                // handled differently now res.add(stats(o, tFilter, f0, HASKEY_FILTER));
+                // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
             }
             //
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, R8_FILTER));
+                res.add(stats(o, timeFilter, f0, R8_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, R8_FILTER, NON_P8_FILTER ));
+                res.add(stats(o, timeFilter, f0, R8_FILTER, NON_P8_FILTER ));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL1_FILTER));
+                res.add(stats(o, timeFilter, f0, HL1_FILTER));
             }
             if(longMode != LONG && time == 0 ) {
-                res.add(stats(o, tFilter, f0, L26_FILTER));
+                res.add(stats(o, timeFilter, f0, L26_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL2_FILTER));
+                res.add(stats(o, timeFilter, f0, HL2_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL3_FILTER));
+                res.add(stats(o, timeFilter, f0, HL3_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL4_FILTER));
+                res.add(stats(o, timeFilter, f0, HL4_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL5_FILTER));
+                res.add(stats(o, timeFilter, f0, HL5_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, tFilter, f0, HL6_FILTER));
+                res.add(stats(o, timeFilter, f0, HL6_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(stats(o, tFilter, f0, HL7_FILTER));
+                res.add(stats(o, timeFilter, f0, HL7_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(stats(o, tFilter, f0, HL8_FILTER));
+                res.add(stats(o, timeFilter, f0, HL8_FILTER));
             }
         }
     }
@@ -640,6 +645,21 @@ System.err.format("%s:%s(%15s) %10.4f %9.4f (%2d) %9.4f\n", res1, res2, key, gte
           if ( res1.filters[i] != res2.filters[i] ) return false;
       }
       return true;
+  }
+
+  public HackFilter createPercTimeFilter(double perc, HackFilter... fis)
+  {
+      ArrayList<Long> timeStamps = new ArrayList<Long>();
+outerloop:
+      for(HackResult res : allHacks) {
+          for(HackFilter fi : fis) { 
+              if ( !fi.accept(res) ) continue outerloop;
+          }
+          timeStamps.add((long)res.timestamp);
+      }
+      Collections.sort(timeStamps);
+      int idx = (int) Math.round((timeStamps.size()-1) * (1.0 - perc));
+      return new LaterThanFilter(timeStamps.get(idx));
   }
 
 	public static void main(String[] args)
