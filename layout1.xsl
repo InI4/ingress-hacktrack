@@ -59,6 +59,9 @@
         .filter {
           font-size:9pt;
         }
+        .evil {
+          background-color: #43EF81;
+        }
         .rowleg, .rowleg2 {
             vertical-align: text-top;
             background: #86C1FF;
@@ -139,8 +142,23 @@
             <td> </td>
             <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
                 <xsl:variable name="colName" select="hs:key/text()" />
-                <th class="filter" colspan="2">
+                <th colspan="2">
+                  <xsl:attribute name="class">
+                      <xsl:text>filter</xsl:text>
+                      <xsl:if test="not(contains(hs:key/text(), 'FRIEND'))"> evil</xsl:if>
+                  </xsl:attribute>
                   <div style="vertical-align:top">
+                    <xsl:variable name="theKey">
+                      <xsl:choose>
+                        <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
+                            <xsl:value-of select="normalize-space(hs:key)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            EVER ALL 
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </xsl:variable>
+                    <xsl:value-of select="substring-before($theKey, ' ')" /><br />
                     <a href="javascript:void(0)" style="float:top">
                       <xsl:attribute name="onclick">
                         <xsl:text>javascript:chartFun(</xsl:text>
@@ -156,14 +174,7 @@
                         </xsl:call-template>
                         <xsl:text>])</xsl:text>
                       </xsl:attribute>
-                      <xsl:choose>
-                        <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
-                            <xsl:value-of select="normalize-space(hs:key)"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            ALL!
-                        </xsl:otherwise>
-                      </xsl:choose>
+                      <xsl:value-of select="substring-after($theKey, ' ')" />
                     </a>
                   </div>
                   <xsl:variable name="av" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />

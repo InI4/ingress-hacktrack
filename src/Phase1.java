@@ -151,6 +151,7 @@ public class Phase1
       throws Exception
 	{
 		Map<String,Integer> types = new HashMap<>();
+		Map<String,Integer> basics = new HashMap<>();
 		Map<Integer,Integer> nkeys = new HashMap<>();
 		Map<Integer,Integer> levels = new HashMap<>();
 		Map<Integer,Integer> levelTotals = new HashMap<>();
@@ -206,6 +207,7 @@ outerloop:
 		  for(HackFilter fi : filters) {
 			  if ( !fi.accept(hackResult) ) continue outerloop;
 		  }
+      increment(basics, "Hacks", 1);
 		  totalCount++;
       boolean hasKey = hackResult.hack.nkeys > 0;
       if ( hasKey ) totalCountHas++; else totalCountHasnot++;
@@ -234,6 +236,7 @@ outerloop:
 		  for(HackItem hackItem : hackResult.hack.items) {
         int count = hackItem.quantity;
         sumCount += count;
+        increment(basics, "Items", 1);
         increment(counts, count, 1);
         String shortName = shortItemName(hackItem);
         increment(types, shortName, count);
@@ -304,6 +307,9 @@ outerloop:
     // if (longMode != LONG || totalCount < 10 ) return null;
     FullResult res = new FullResult(filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
+		res.summary("Basics", basics, totalCount);
+		res.summary("With Key", getKeysStatsHas, totalCountHas);
+		res.summary("WO Key", getKeysStatsHasnot, totalCountHasnot);
 		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount);
 		res.summary("Items", noOfItems, totalCount);
 		res.summary("Resos", noOfResos, totalCount);
@@ -333,8 +339,6 @@ outerloop:
 		}
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
 		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount);
-		res.summary("With Key", getKeysStatsHas, totalCountHas);
-		res.summary("WO Keys", getKeysStatsHasnot, totalCountHasnot);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
