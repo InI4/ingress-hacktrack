@@ -39,7 +39,8 @@ public class Phase1
           ArrayList<String> changeDates = new ArrayList<>();
           String line;
           while ( ( line = br.readLine() ) != null ) {
-              changeDates.add(line.trim());
+              line = line.trim();
+              if ( line.charAt(0) != '#' ) changeDates.add(line);
           }
           br.close();
           Collections.sort(changeDates);
@@ -572,7 +573,7 @@ outerloop:
             res.add(res2);
             if ( time == 0 && f0 == FRIEND_FILTER ) {
                 // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
-                res.add(stats(o, timeFilter, f0, CAN_GET_ULTRA));
+                // res.add(stats(o, timeFilter, f0, CAN_GET_ULTRA));
             }
             else if ( time == 0 && f0 == FOE_FILTER ) {
                 // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
