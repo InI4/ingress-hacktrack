@@ -5,6 +5,7 @@
   <xsl:output method="html" indent="no" />
   <xsl:param name="filter" select="''" />
   <xsl:param name="antifilter" select="'NEUTRAL'" />
+  <xsl:param name="SPC" select="' '" />
 
   <xsl:template match="hs:hackstat">
      <xsl:message>Filter=<xsl:value-of select="$filter"/>-<xsl:value-of select="$antifilter"/></xsl:message>
@@ -70,6 +71,10 @@
             background: #64AeFF;
             border-top: black 2px solid;
         }
+        .secondRow {
+            background: #86C1FF;
+            border-top: black 2px solid;
+        }
         .nobr {
             white-space:nowrap;
         }
@@ -123,7 +128,7 @@
           <tr class="firstRow">
             <th class="rowleg">
                 <xsl:attribute name="rowspan">
-                    <xsl:value-of select="count($items) + 1" />
+                    <xsl:value-of select="count($items) + 2" />
                 </xsl:attribute>
                 <a>
                   <xsl:attribute name="name">
@@ -139,26 +144,40 @@
                 <br />
                 <a href="#top"><sup>^top</sup></a>
             </th>
-            <td> </td>
+            <td rowspan="2"> </td>
+            <xsl:variable name="metacolumns"
+                select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
+            <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
+                <xsl:variable name="theKey"><xsl:call-template name="findColumnKey" /></xsl:variable>
+                <xsl:variable name="keyPart1" select="substring-before($theKey, $SPC)" />
+                <xsl:if test="substring-before(hs:key/text(),$SPC) != substring-before(preceding-sibling::*[1]/hs:key/text(),$SPC)" >
+                    <th align="left">
+                        <xsl:attribute name="colspan">
+                            <xsl:value-of select="2 * count(../hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter)) and starts-with(hs:key/text(), concat($keyPart1,' '))])" />
+                        </xsl:attribute>
+                        &#160;<xsl:value-of select="$keyPart1" /><br />
+                    </th>
+                  </xsl:if>
+            </xsl:for-each>
+            <td rowspan="2"> </td>
+            <th class="rowleg">
+                <xsl:attribute name="rowspan">
+                    <xsl:value-of select="count($items) + 2" />
+                </xsl:attribute>
+              <xsl:value-of select="."/>
+              <br />
+              <a href="#top"><sup>^top</sup></a>
+            </th>
+            </tr><tr class="secondRow">
             <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
                 <xsl:variable name="colName" select="hs:key/text()" />
+                <xsl:variable name="theKey"><xsl:call-template name="findColumnKey" /></xsl:variable>
                 <th colspan="2">
                   <xsl:attribute name="class">
                       <xsl:text>filter</xsl:text>
                       <xsl:if test="not(contains(hs:key/text(), 'FRIEND'))"> evil</xsl:if>
                   </xsl:attribute>
                   <div style="vertical-align:top">
-                    <xsl:variable name="theKey">
-                      <xsl:choose>
-                        <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
-                            <xsl:value-of select="normalize-space(hs:key)"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            EVER ALL 
-                        </xsl:otherwise>
-                      </xsl:choose>
-                    </xsl:variable>
-                    <xsl:value-of select="substring-before($theKey, ' ')" /><br />
                     <a href="javascript:void(0)" style="float:top">
                       <xsl:attribute name="onclick">
                         <xsl:text>javascript:chartFun(</xsl:text>
@@ -174,7 +193,7 @@
                         </xsl:call-template>
                         <xsl:text>])</xsl:text>
                       </xsl:attribute>
-                      <xsl:value-of select="substring-after($theKey, ' ')" />
+                      <xsl:value-of select="substring-after($theKey, $SPC)" />
                     </a>
                   </div>
                   <xsl:variable name="av" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />
@@ -185,15 +204,6 @@
                   </xsl:if>
                 </th>
             </xsl:for-each>
-            <td> </td>
-            <th class="rowleg">
-                <xsl:attribute name="rowspan">
-                    <xsl:value-of select="count($items) + 1" />
-                </xsl:attribute>
-              <xsl:value-of select="."/>
-              <br />
-              <a href="#top"><sup>^top</sup></a>
-            </th>
           </tr>
           <xsl:for-each select="$items" >
               <tr>
@@ -210,6 +220,16 @@
       </html>
   </xsl:template>
 
+  <xsl:template name="findColumnKey">
+      <xsl:choose>
+          <xsl:when test="string-length(normalize-space(hs:key)) &gt; 0">
+              <xsl:value-of select="normalize-space(hs:key)"/>
+          </xsl:when>
+          <xsl:otherwise>
+              EVER ALL 
+            </xsl:otherwise>
+      </xsl:choose>
+  </xsl:template>
 
   <xsl:template name="js-data-row">
     <xsl:param name="meStats" />
