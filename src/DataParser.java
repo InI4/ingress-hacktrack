@@ -2,6 +2,10 @@ package de.spieleck.ingress.hackstat;
 
 import java.io.IOException;
 import java.io.FileReader;
+import java.io.Reader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
@@ -26,10 +30,28 @@ public class DataParser
         throws IOException
     {
         FileReader fr = new FileReader(fi);
+        return grok(fr);
+    }
+
+    public List<HackResult> grok(InputStream input)
+        throws IOException
+    {
+        InputStreamReader ir = new InputStreamReader(new BufferedInputStream(input));
+        return grok(ir);
+    }
+
+    public List<HackResult> grok(Reader reader)
+        throws IOException
+    {
+        long t0 = System.currentTimeMillis();
         _HackContainer o = new _HackContainer();
         Type t = new TypeToken<_HackContainer>(){}.getType();
-        o = GSON.fromJson(fr, t);
+        o = GSON.fromJson(reader, t);
+        if ( o == null ) 
+            throw new IOException("GSON returned null!");
         L.info("Claimed size="+o.total_rows);
+        if ( o.total_rows == 0 ) 
+            throw new IOException("GSON did not find objects!");
         List<HackResult> res = new ArrayList<HackResult>(o.total_rows);
         int total = 0;
         int count = 0;
@@ -47,7 +69,8 @@ public class DataParser
             total += h.getItemCount();
             res.add(h);
         }
-        L.info("*** "+res.size()+" hacks for "+total+" items, canGetUltraCount="+canGetUltraCount+", lengthCheck="+(res.size() != o.total_rows ? "WARNING" : "OK"));
+        long t1 = System.currentTimeMillis();
+        L.info("*** "+res.size()+" hacks for "+total+" items, canGetUltraCount="+canGetUltraCount+", lengthCheck="+(res.size() != o.total_rows ? "WARNING" : "OK")+" dt="+(t1-t0)+" ms");
         return res;
     }
 

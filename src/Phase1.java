@@ -6,6 +6,9 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,11 +88,32 @@ public class Phase1
       this.longMode = longMode;
 	}
 
+  public void add(String s)
+		throws IOException
+	{
+      try {
+          URL u = new URL(s);
+          HttpURLConnection huc = (HttpURLConnection) u.openConnection();
+          huc.connect();
+          List<HackResult> d = parser.grok(huc.getInputStream());
+          add(d, s);
+      }
+      catch(Exception ex) {
+          L.warn("URL processing.", ex);
+          add(new File(s));
+      }
+  }
+
 	public void add(File fi)
 		throws IOException
 	{
 		FileReader fr = new FileReader(fi);
 		List<HackResult> d = parser.grok(fi);
+    add(d, fi.toString());
+  };
+
+  public void add(List<HackResult> d, String inputID)
+  {
     for(HackResult hackResult : d) {
         startTime = Math.min(startTime, hackResult.timestamp);
         endTime = Math.max(endTime, hackResult.timestamp);
@@ -101,13 +125,13 @@ public class Phase1
                 L.debug("Media fixed@"+hackResult);
             }
             if ( CUBE.equals(hackItem.object) && hackItem.level != hackLevel ) {
-                plausi("WrongCube", fi, hackItem, hackResult);
+                plausi("WrongCube", inputID, hackItem, hackResult);
                 isClear = false;
             } else if ( hackItem.level  > 0 && hackItem.level > hackLevel+2 ) {
-                plausi("ItemTooHigh", fi, hackItem, hackResult);
+                plausi("ItemTooHigh", inputID, hackItem, hackResult);
                 isClear = false;
             } else if ( hackItem.level  > 0 && hackItem.level < hackLevel-1 ) {
-                plausi("ItemTooLow", fi, hackItem, hackResult);
+                plausi("ItemTooLow", inputID, hackItem, hackResult);
                 isClear = false;
             }
         }
@@ -118,9 +142,9 @@ public class Phase1
     L.info(String.format("***** #allHacks=%d of %d, endTime=%tc",allHacks.size(),d.size(),1000*(long)endTime));
 	}
 
-  private static void plausi(String mark, File fi, HackItem item, HackResult hack)
+  private static void plausi(String mark, String inputID, HackItem item, HackResult hack)
   {
-      L.warn(String.format("%-12s@%13s:%-22s %-4s %s",mark, fi, hack._id,item,hack));
+      L.warn(String.format("%-12s@%13s:%-22s %-4s %s",mark, inputID, hack._id,item,hack));
   }
 
   /**
@@ -615,6 +639,7 @@ outerloop:
         }
     }
     // Postprocessing for distribution deltas
+    /*
     FullResult[] results = res.toArray(new FullResult[res.size()]);
     for(int i = 0; i < results.length; i++) {
         FullResult res1 = results[i];
@@ -636,6 +661,7 @@ System.err.format("%s:%s(%15s) %10.4f %9.4f (%2d) %9.4f\n", res1, res2, key, gte
             break;
         }
     }
+    */
     o.close();
     return res;
 	}
@@ -675,14 +701,16 @@ outerloop:
     CombinedSummarizer o = new CombinedSummarizer();
     o.addSummarizer(new XSLTSummarizer());
     o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
-		for(String arg : args) p1.add(new File(arg));
+		for(String arg : args) p1.add(arg);
     p1.dumpCSV("out.csv",";");
-    p1.runFilterStack(SHORT, o);
+    List<FullResult> res = p1.runFilterStack(SHORT, o);
+    /*
     List<FullResult> allFRes = p1.runFilterStack(LONG, NO_SUMMARY);
     FullResult f0 = allFRes.get(0);
     for(String key : f0.keys()) {
         selectiveAnalysis(key, allFRes);
     }
+    */
   }
 
 }
