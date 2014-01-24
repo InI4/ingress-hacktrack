@@ -28,6 +28,8 @@ import static de.spieleck.ingress.hackstat.HackFilter.*;
 public class Phase1
     implements Globals
 {
+  public final static boolean INCL_KEY = false;
+
   private final static Logger L = Logger.getLogger(Phase1.class);
 
   private final static int WEEK = 60*60*24*7;
@@ -191,7 +193,7 @@ public class Phase1
 		Map<Integer,Integer> noOfItems = new HashMap<>();
 		Map<Integer,Integer> noOfResos = new HashMap<>();
 		Map<Integer,Integer> noOfXmps = new HashMap<>();
-		Map<Integer,Integer> noOfOther = new HashMap<>();
+		Map<Integer,Integer> noOfOtherNoKey = new HashMap<>();
 		Map<String,Integer> noOfPattern = new HashMap<>();
 		Map<String,Integer> noOfUSPattern = new HashMap<>();
 		Map<String,Integer> noResoPattern = new HashMap<>();
@@ -236,6 +238,7 @@ outerloop:
 		for(HackResult hackResult : allHacks) {
 		  int hackLevel = hackResult.getLevel();
       HashSet<String> notSeenItems = new HashSet<>(allFullItems);
+      if ( !INCL_KEY ) notSeenItems.remove(KEY);
 		  for(HackFilter fi : filters) {
 			  if ( !fi.accept(hackResult) ) continue outerloop;
 		  }
@@ -271,7 +274,7 @@ outerloop:
         increment(basics, "Items", 1);
         increment(counts, count, 1);
         String shortName = shortItemName(hackItem);
-        increment(types, shortName, count);
+        if ( INCL_KEY || !KEY.equals(hackItem.object) ) increment(types, shortName, count);
         switch ( hackItem.object ) {
           case RESO: sumResoCount += hackItem.quantity; break;
           case XMP: sumXmpCount += hackItem.quantity; break;
@@ -302,7 +305,7 @@ outerloop:
           increment(levels, relLevel, count);
           increment(levelPattern, levelBase+relLevel, count);
         }
-        else {
+        else if ( !INCL_KEY || KEY.equals(hackItem.object) ) {
           sumOtherCount += count;
         }
         if ( hackLevel > 1 && hackLevel < 7 ) {
@@ -311,12 +314,12 @@ outerloop:
             }
         }
         notSeenItems.remove(fullItem);
-        increment(crossItems, fullItem, count);
+        if ( INCL_KEY || !KEY.equals(hackItem.object) ) increment(crossItems, fullItem, count);
       }
       for(String noItem : notSeenItems) increment(crossItems, noItem, 0);
       increment(noOfResos, sumResoCount, 1);
       increment(noOfXmps, sumXmpCount, 1);
-      increment(noOfOther, sumOtherCount, 1);
+      increment(noOfOtherNoKey, sumOtherCount, 1);
       increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
       increment(noResoPattern, ia2str(resoPattern), 1);
       increment(noXMPPattern, ia2str(xmpPattern), 1);
@@ -348,7 +351,7 @@ outerloop:
 		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
 		res.summary("Xmps", noOfXmps, totalCount, true, reference);
 		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
-		res.summary("Other", noOfOther, totalCount, true, reference);
+		res.summary("Other (no R,XMP,K)", noOfOtherNoKey, totalCount, true, reference);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount, true, reference);
 		res.summary("Short Patterns", noOfPattern, totalCount, true, reference);
 		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount, true, reference);
@@ -361,6 +364,7 @@ outerloop:
 		res.summary2("Items x Level", crossItems, totalCount, true, reference);
 		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true, reference);
 		if(longMode == LONG) res.summary2("Hack Level vs Keys", hackLevelVsKeys, totalCount, true, reference);
+    /*
     if(longMode == LONG ) {
         for(int i = 1; i <= 8; i++) {
             if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
@@ -369,6 +373,10 @@ outerloop:
             }
         }
 		}
+    */
+    for(int i = 1; i <= 8; i++) {
+        res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
+    }
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
 		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
 		out.value("overHacking-Correlation", overHacks.correlation());
@@ -598,14 +606,17 @@ outerloop:
             res.add(res2);
         }
     }
-    FullResult res10 = stats(Summarizer.NO_SUMMARIZER, times[0], FRIEND_FILTER);
-    FullResult res11 = stats(Summarizer.NO_SUMMARIZER, times[0], FOE_FILTER);
+    // Bootstrapping for changes
     LaterThanFilter timeFilter0 = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
     LaterThanFilter timeFilter1 = createPercTimeFilter(0.33, times[0], FOE_FILTER);
+    FullResult res10 = stats(Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter0), FRIEND_FILTER);
+    FullResult res11 = stats(Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter1), FOE_FILTER);
     FullResult res00 = stats(o, res10, timeFilter0, FRIEND_FILTER);
     FullResult res01 = stats(o, res11, timeFilter1, FOE_FILTER);
+    // Finally add some of the bootstrap data
     res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res01 : res00);
     res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res00 : res01);
+    // Loop over the time events
     for(int time = 0; time < times.length; time++) {
         DateFilter timeFilter = times[time];
         if ( longMode == LONG ) {
@@ -661,18 +672,6 @@ outerloop:
     o.close();
     return res;
 	}
-
-  public static boolean similarFilter(FullResult res1, FullResult res2)
-  {
-      if ( res1 == null || res2 == null || res1.filters == null || res2.filters == null ) return false;
-      if ( res1.filters.length != res2.filters.length ) return false;
-      if ( !(res1.filters[0] instanceof DateFilter || res1.filters[0] instanceof BetweenDateFilter) ) return false;
-      if ( !(res2.filters[0] instanceof DateFilter || res2.filters[0] instanceof BetweenDateFilter) ) return false;
-      for(int i = 1; i < res1.filters.length; i++) {
-          if ( res1.filters[i] != res2.filters[i] ) return false;
-      }
-      return true;
-  }
 
   public LaterThanFilter createPercTimeFilter(double perc, HackFilter... fis)
   {
