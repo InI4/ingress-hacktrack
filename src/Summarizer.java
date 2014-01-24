@@ -19,4 +19,19 @@ public interface Summarizer
     public void value(CharSequence label, CharSequence value) throws Exception;
     public void value(CharSequence label, long value) throws Exception;
     public void close() throws Exception;
+
+    public final static Summarizer NO_SUMMARIZER = new Summarizer() {
+	      public void startColumn(CharSequence label) { }
+	      public void endColumn() { }
+	      public void start(CharSequence label) { }
+	      public void description(CharSequence desc) { }
+	      public void setNorms(double f, double f2) { }
+	      public void item(Object key, int h) { }
+	      public void item(Object key, Stats1D h) { }
+	      public void finish(int sum) { }
+	      public void value(CharSequence label, double value) { }
+	      public void value(CharSequence label, CharSequence value) { }
+	      public void value(CharSequence label, long value) { }
+	      public void close() { }
+    };
 }

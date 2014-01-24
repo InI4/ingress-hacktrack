@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.Locale;
 
 import org.apache.log4j.Logger;
 
@@ -33,7 +34,7 @@ public class Phase1
 
   public final static String WEEKS = "Weeks";
 
-  private static HackFilter[] times;
+  private static DateFilter[] times;
   private final static Map<String,String> ABBR = new HashMap<>();
   static
   {
@@ -48,7 +49,7 @@ public class Phase1
           br.close();
           Collections.sort(changeDates);
           int noOfDates = changeDates.size();
-          times = new HackFilter[noOfDates+1];
+          times = new DateFilter[noOfDates+1];
           int idx = noOfDates;
           times[idx--] = new BeforeThanFilter(changeDates.get(0));
           for(int i = 1; i < noOfDates; i++) {
@@ -173,6 +174,12 @@ public class Phase1
   }
 
 	public FullResult stats(Summarizer out, HackFilter... filters)
+      throws Exception
+	{
+      return stats(out, null, filters);
+  }
+
+	public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters)
       throws Exception
 	{
 		Map<String,Integer> types = new HashMap<>();
@@ -332,38 +339,38 @@ outerloop:
     // if (longMode != LONG || totalCount < 10 ) return null;
     FullResult res = new FullResult(filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
-		res.summary("Basics", basics, totalCount);
-		res.summary("With Key", getKeysStatsHas, totalCountHas);
-		res.summary("WO Key", getKeysStatsHasnot, totalCountHasnot);
-		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount);
-		res.summary("Items", noOfItems, totalCount);
-		res.summary("Resos", noOfResos, totalCount);
-		res.summary("ResoPatterns", noResoPattern, totalCount);
-		res.summary("Xmps", noOfXmps, totalCount);
-		res.summary("XMPPatterns", noXMPPattern, totalCount);
-		res.summary("Other", noOfOther, totalCount);
-		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount);
-		res.summary("Short Patterns", noOfPattern, totalCount);
-		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount);
-		res.summary("Rare Items", rareItems, totalCount);
-		if(longMode == LONG) res.summary("Long Patterns", noOfPatternBig, totalCount);
-		if(longMode == LONG) res.summary("Huge Patterns", noOfPatternHuge, totalCount);
-		res.summary("Items by Type", types, totalCount);
-		res.summary("Items by Level", levels, totalCount);
-		if(longMode == LONG) res.summary("Patterns of Items by Overlevel, Level", levelPattern, totalCount);
-		res.summary2("Items x Level", crossItems, totalCount, true);
-		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true);
-		if(longMode == LONG) res.summary2("Hack Level vs Keys", hackLevelVsKeys, totalCount, true);
+		res.summary("Basics", basics, totalCount, true, reference);
+		res.summary("With Key", getKeysStatsHas, totalCountHas, true, reference);
+		res.summary("WO Key", getKeysStatsHasnot, totalCountHasnot, true, reference);
+		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount, true, reference);
+		res.summary("Items", noOfItems, totalCount, true, reference);
+		res.summary("Resos", noOfResos, totalCount, true, reference);
+		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
+		res.summary("Xmps", noOfXmps, totalCount, true, reference);
+		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
+		res.summary("Other", noOfOther, totalCount, true, reference);
+		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount, true, reference);
+		res.summary("Short Patterns", noOfPattern, totalCount, true, reference);
+		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount, true, reference);
+		res.summary("Rare Items", rareItems, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Long Patterns", noOfPatternBig, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Huge Patterns", noOfPatternHuge, totalCount, true, reference);
+		res.summary("Items by Type", types, totalCount, true, reference);
+		res.summary("Items by Level", levels, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Patterns of Items by Overlevel, Level", levelPattern, totalCount, true, reference);
+		res.summary2("Items x Level", crossItems, totalCount, true, reference);
+		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true, reference);
+		if(longMode == LONG) res.summary2("Hack Level vs Keys", hackLevelVsKeys, totalCount, true, reference);
     if(longMode == LONG ) {
         for(int i = 1; i <= 8; i++) {
-            if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false);
+            if ( longMode == LONG || i == 1 || i == 7 || i == 8 ) res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
             if ( longMode != LONG && i == 2 ) {
-                res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true);
+                res.summary2("Hack Level L2-6 rel.", levelResults26, totalCount, true, reference);
             }
         }
 		}
-		if(longMode == LONG) res.summary("Hackers", hackers, totalCount);
-		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount);
+		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
+		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
@@ -397,7 +404,6 @@ outerloop:
       private HackFilter[] filters;
       private Summarizer out;
       private HashMap<String,DiscreteDistr> allData = new LinkedHashMap<>();
-      private HashMap<String,Double> distrDelta = new HashMap<>();
 
       private FullResult(HackFilter[] filters, Summarizer out)
       {
@@ -411,13 +417,7 @@ outerloop:
 
       public DiscreteDistr get(String key) { return allData.get(key); }
 
-      private void summary(String label, Map<? extends Object, Integer> data, Integer norm)
-          throws Exception
-      {
-          summary(label, data, norm, true);
-      }
-
-      private void summary(String label, Map<? extends Object, Integer> data, Integer norm, boolean average)
+      private void summary(String label, Map<? extends Object, Integer> data, Integer norm, boolean average, FullResult reference)
           throws Exception
       {
         if ( data == null ) return;
@@ -453,10 +453,11 @@ outerloop:
             out.item(key, data.get(key));
             distr.inc(key, (int) data.get(key));
         }
+        addTest2Out(distr, label, reference);
         out.finish(sum);
       }
 
-      private void summary2(String label, Map<? extends Object, Stats1D> data, Integer norm, boolean average)
+      private void summary2(String label, Map<? extends Object, Stats1D> data, Integer norm, boolean average, FullResult reference)
           throws Exception
       {
         if ( data == null ) return;
@@ -488,7 +489,22 @@ outerloop:
             out.item(key, data.get(key));
             distr.inc(key, (int) data.get(key).sum());
         }
+        addTest2Out(distr, label, reference);
         out.finish(sum);
+      }
+
+      private void addTest2Out(DiscreteDistr d1, String label, FullResult reference)
+          throws Exception
+      {
+          if ( reference == null ) return;
+          DiscreteDistr d2 = reference.get(label);
+          Set freedom = d1.combinedKeys(d2);
+          if ( freedom.size() == 1 ) return;
+          double gtest = d1.gtest(d2);
+          if ( gtest == Double.POSITIVE_INFINITY ) return;
+          double pochisq = SFunc.pochisq(gtest, freedom.size()-1);
+          double changePerc = 100.0 * (1.0 - pochisq);
+          out.value("_changePerc", String.format(Locale.US, "%.1f", changePerc));
       }
 
       private DiscreteDistr prepareDistr(String label)
@@ -582,12 +598,16 @@ outerloop:
             res.add(res2);
         }
     }
-    HackFilter timeFilter;
-    timeFilter = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
-    FullResult res0 = stats(o, timeFilter, FRIEND_FILTER);
-    res.add(res0);
+    FullResult res10 = stats(Summarizer.NO_SUMMARIZER, times[0], FRIEND_FILTER);
+    FullResult res11 = stats(Summarizer.NO_SUMMARIZER, times[0], FOE_FILTER);
+    LaterThanFilter timeFilter0 = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
+    LaterThanFilter timeFilter1 = createPercTimeFilter(0.33, times[0], FOE_FILTER);
+    FullResult res00 = stats(o, res10, timeFilter0, FRIEND_FILTER);
+    FullResult res01 = stats(o, res11, timeFilter1, FOE_FILTER);
+    res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res01 : res00);
+    res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res00 : res01);
     for(int time = 0; time < times.length; time++) {
-        timeFilter = times[time];
+        DateFilter timeFilter = times[time];
         if ( longMode == LONG ) {
             FullResult res1 = stats(o, timeFilter);
             res.add(res1);
@@ -638,30 +658,6 @@ outerloop:
             }
         }
     }
-    // Postprocessing for distribution deltas
-    /*
-    FullResult[] results = res.toArray(new FullResult[res.size()]);
-    for(int i = 0; i < results.length; i++) {
-        FullResult res1 = results[i];
-        for(int j = i+1; j < results.length; j++) {
-            FullResult res2 = results[j];
-            if ( !similarFilter(res1, res2) ) continue;
-            for(String key : res1.keys()) if ( !WEEKS.equals(key) ) {
-                DiscreteDistr d1 = res1.get(key);
-                DiscreteDistr d2 = res2.get(key);
-                Set freedom = d1.combinedKeys(d2);
-                if ( freedom.size() < 2 ) continue;
-                // to rigid double gtest = d1.gtest(d2);
-                double gtest =DiscreteDistr.gtest(d1, d2);
-                double chiBound = SFunc.critchi(0.95, freedom.size()-1);
-                double normed = gtest / chiBound;
-                res1.distrDelta.put(key, normed);
-System.err.format("%s:%s(%15s) %10.4f %9.4f (%2d) %9.4f\n", res1, res2, key, gtest, chiBound, freedom.size()-1, normed);                
-            }
-            break;
-        }
-    }
-    */
     o.close();
     return res;
 	}
@@ -678,7 +674,7 @@ System.err.format("%s:%s(%15s) %10.4f %9.4f (%2d) %9.4f\n", res1, res2, key, gte
       return true;
   }
 
-  public HackFilter createPercTimeFilter(double perc, HackFilter... fis)
+  public LaterThanFilter createPercTimeFilter(double perc, HackFilter... fis)
   {
       ArrayList<Long> timeStamps = new ArrayList<Long>();
 outerloop:

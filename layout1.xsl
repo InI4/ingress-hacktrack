@@ -71,6 +71,11 @@
             background: #64AeFF;
             border-top: black 2px solid;
         }
+
+	.firstRow TH {
+            padding: 5pt;
+	}
+
         .secondRow {
             background: #86C1FF;
             border-top: black 2px solid;
@@ -196,11 +201,13 @@
                       <xsl:value-of select="substring-after($theKey, $SPC)" />
                     </a>
                   </div>
-                  <xsl:variable name="av" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />
-                  <xsl:if test="$av">
-                    <div style="vertical-align:bottom">
-                      mean=<xsl:value-of select="format-number($av,'0.00')" />
-                    </div>
+                  <xsl:variable name="average" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />
+                  <xsl:if test="$average">
+		      <br />mean=<xsl:value-of select="format-number($average,'0.00')" />
+                  </xsl:if>
+                  <xsl:variable name="changePerc" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_changePerc']/hs:string" />
+                  <xsl:if test="$changePerc">
+		      <br />change: <xsl:value-of select="$changePerc" />%
                   </xsl:if>
                 </th>
             </xsl:for-each>

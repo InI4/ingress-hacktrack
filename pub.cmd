@@ -1,6 +1,7 @@
 setlocal
 pushd private
-call get.cmd
+rem call get.cmd
+call repl.cmd
 popd
 set pf=out.html
 call fsn.cmd

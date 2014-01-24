@@ -80,7 +80,7 @@ public interface HackFilter
     public final static SimpleDateFormat DF = new SimpleDateFormat("yy-MM-dd");
 
     public abstract static class DateFilter
-        implements HackFilter
+        implements HackFilter, Comparable<DateFilter>
     {
         protected long date;
         protected String dateStr;
@@ -100,6 +100,14 @@ public interface HackFilter
         public abstract boolean accept(HackResult hr); 
        
         public abstract String toString();
+
+        public int compareTo(DateFilter df)
+        {
+            long h = date - df.date;
+            if ( h < 0 ) return -1;
+            else if ( h > 0 ) return +1;
+            return 0;
+        }
     }
 
     public static class LaterThanFilter
@@ -129,15 +137,18 @@ public interface HackFilter
     }
 
     public static class BetweenDateFilter
-        extends And
+        extends LaterThanFilter
     {
         protected String s;
+        protected BeforeThanFilter b;
         public BetweenDateFilter(String date1, String date2) throws ParseException
         {
-            super(new LaterThanFilter(date1), new BeforeThanFilter(date2));
+            super(date1);
+            b = new BeforeThanFilter(date2);
             s = date1+":"+date2;
         }
         public String toString() { return s; }
+        public boolean accept(HackResult hr) { return super.accept(hr) && b.accept(hr); }
     }
 
     public final static HackFilter HL1_FILTER = new HLX_Filter() {
