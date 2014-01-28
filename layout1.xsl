@@ -61,7 +61,7 @@
           font-size:9pt;
         }
         .evil {
-          background-color: #43EF81;
+          background-color: #63EF21;
         }
         .rowleg, .rowleg2 {
             vertical-align: text-top;
@@ -71,11 +71,9 @@
             background: #64AeFF;
             border-top: black 2px solid;
         }
-
-	.firstRow TH {
-            padding: 5pt;
-	}
-
+        .firstRow TH {
+                  padding: 5pt;
+        }
         .secondRow {
             background: #86C1FF;
             border-top: black 2px solid;
@@ -92,6 +90,15 @@
         .small {
             font-size:9pt;
             font-weight: normal;
+        }
+        .red {
+            color:red;
+        }
+        .yellow {
+            color:yellow;
+        }
+        .green {
+            color:green;
         }
       </style>
       </head>
@@ -207,7 +214,17 @@
                   </xsl:if>
                   <xsl:variable name="changePerc" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_changePerc']/hs:string" />
                   <xsl:if test="$changePerc">
-		      <br />change: <xsl:value-of select="$changePerc" />%
+                    <br /><span>
+                      <xsl:attribute name="class">
+                          nobr
+                          <xsl:choose>
+                            <xsl:when test="$changePerc > 95">red</xsl:when>
+                            <xsl:when test="$changePerc > 80">yellow</xsl:when>
+                            <xsl:when test="$changePerc > 50">green</xsl:when>
+                          </xsl:choose>
+                      </xsl:attribute>
+                      change: <xsl:value-of select="$changePerc" />%
+                    </span>
                   </xsl:if>
                 </th>
             </xsl:for-each>

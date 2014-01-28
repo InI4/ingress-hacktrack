@@ -26,7 +26,7 @@ import static de.spieleck.ingress.hackstat.GenericHelper.*;
 import static de.spieleck.ingress.hackstat.HackFilter.*;
 
 public class Phase1
-    implements Globals
+    implements Globals, StatCreator
 {
   public final static boolean INCL_KEY = false;
 
@@ -175,12 +175,14 @@ public class Phase1
       L.info("Finished <"+fName+">.");
   }
 
+  @Override
 	public FullResult stats(Summarizer out, HackFilter... filters)
       throws Exception
 	{
       return stats(out, null, filters);
   }
 
+  @Override
 	public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters)
       throws Exception
 	{
@@ -348,9 +350,7 @@ outerloop:
 		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount, true, reference);
 		res.summary("Items", noOfItems, totalCount, true, reference);
 		res.summary("Resos", noOfResos, totalCount, true, reference);
-		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
 		res.summary("Xmps", noOfXmps, totalCount, true, reference);
-		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
 		res.summary("Other (no R,XMP,K)", noOfOtherNoKey, totalCount, true, reference);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount, true, reference);
 		res.summary("Short Patterns", noOfPattern, totalCount, true, reference);
@@ -378,7 +378,9 @@ outerloop:
         res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
     }
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
-		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
+		res.summary(WEEKS, weeks, totalCount, true, reference);
+		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
+		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
@@ -402,196 +404,6 @@ outerloop:
       return name2 == null ? name : name2;
   }
 
-  /**
-   * Class to collect all data, to allow something like a G-Test for "relevancy".
-   * The details might probably be programmed out in a "next" version of the programm,
-   * since we might still consider it nice, to have all the data analyzed.
-   */
-  public class FullResult
-  {
-      private HackFilter[] filters;
-      private Summarizer out;
-      private HashMap<String,DiscreteDistr> allData = new LinkedHashMap<>();
-
-      private FullResult(HackFilter[] filters, Summarizer out)
-      {
-          this.filters = filters;
-          this.out = out;
-      }
-
-      public HackFilter[] getFilters() { return filters; }
-
-      public Set<String> keys() { return allData.keySet(); }
-
-      public DiscreteDistr get(String key) { return allData.get(key); }
-
-      private void summary(String label, Map<? extends Object, Integer> data, Integer norm, boolean average, FullResult reference)
-          throws Exception
-      {
-        if ( data == null ) return;
-        int sum = 0;
-        boolean allInt = true;
-        Object[] keys = new Object[data.size()];
-        int i = 0;
-        for(Object key : data.keySet()) {
-          keys[i++] = key;
-          sum += data.get(key);
-          allInt &= (key instanceof Integer);
-        }
-        Arrays.sort(keys);
-        if ( norm == null ) {
-            norm = Integer.valueOf(sum);
-        }
-        double hsum = 0.0;
-        double f = 100.0 / norm;
-        double f2 = 100.0 / sum;
-        if ( allInt ) {
-            for(Object key : keys) {
-                hsum += data.get(key) * ((Integer)key);
-            }
-        }
-        out.start(label);
-        String description = String.format("total=%d, norm=%d ", sum, norm);
-        // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
-        out.description(description);
-        if ( allInt && average ) out.value("_average", hsum/norm);
-        out.setNorms(f, f2);
-        DiscreteDistr distr = prepareDistr(label);
-        for(Object key : keys) {
-            out.item(key, data.get(key));
-            distr.inc(key, (int) data.get(key));
-        }
-        addTest2Out(distr, label, reference);
-        out.finish(sum);
-      }
-
-      private void summary2(String label, Map<? extends Object, Stats1D> data, Integer norm, boolean average, FullResult reference)
-          throws Exception
-      {
-        if ( data == null ) return;
-        boolean allInt = true;
-        Object[] keys = new Object[data.size()];
-        int i = 0, sum = 0;
-        for(Object key : data.keySet()) {
-          keys[i++] = key;
-          sum += data.get(key).sum();
-          allInt &= (key instanceof Integer);
-        }
-        Arrays.sort(keys);
-        if ( norm == null ) {
-            norm = Integer.valueOf(sum);
-        }
-        double hsum = 0.0;
-        if ( allInt ) {
-            for(Object key : keys) {
-                hsum += data.get(key).sum() * ((Integer)key);
-            }
-        }
-        out.start(label);
-        String description = String.format("total=%d, norm=%d ", sum, norm);
-        // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
-        out.description(description);
-        if ( allInt && average ) out.value("_average", hsum/norm);
-        DiscreteDistr distr = prepareDistr(label);
-        for(Object key : keys) {
-            out.item(key, data.get(key));
-            distr.inc(key, (int) data.get(key).sum());
-        }
-        addTest2Out(distr, label, reference);
-        out.finish(sum);
-      }
-
-      private void addTest2Out(DiscreteDistr d1, String label, FullResult reference)
-          throws Exception
-      {
-          if ( reference == null ) return;
-          DiscreteDistr d2 = reference.get(label);
-          Set freedom = d1.combinedKeys(d2);
-          if ( freedom.size() == 1 ) return;
-          double gtest = d1.gtest(d2);
-          if ( gtest == Double.POSITIVE_INFINITY ) return;
-          double pochisq = SFunc.pochisq(gtest, freedom.size()-1);
-          double changePerc = 100.0 * (1.0 - pochisq);
-          out.value("_changePerc", String.format(Locale.US, "%.1f", changePerc));
-      }
-
-      private DiscreteDistr prepareDistr(String label)
-      {
-          DiscreteDistr res = new DiscreteDistr();
-          allData.put(label, res);
-          return res;
-      }
-
-      public String toString() {
-          StringBuilder sb = new StringBuilder();
-          sb.append("F[");
-          Util.append(sb, filters);
-          sb.append("]");
-          return sb.toString();
-      }
-  }
-
-  private static void compareDist(FullResult base, FullResult res)
-  {
-      System.err.println(Util.append(new StringBuilder(), res.getFilters()));
-      double sum = 0.0;
-      double max = 0.0;
-      for(String key : base.keys()) {
-          DiscreteDistr d1 = base.get(key);
-          DiscreteDistr d2 = res.get(key);
-          Set freedom = d1.combinedKeys(d2);
-          if ( d2 == null ) continue;
-          double gtest = d1.gtest(d2);
-          double chiBound = SFunc.critchi(0.95, freedom.size()-1);
-          double normed = gtest / chiBound;
-          System.err.println(String.format("   gtest(%-23s)=%8.2e  (%3d;%7.2e) %10.0f%%",
-                  key, gtest, freedom.size()-1, chiBound, normed));
-          if ( gtest > 0 ) {
-              sum += normed;
-              max = Math.max(max, normed);
-          }
-      }
-      System.err.println(String.format("   === %8.2e/%8.2e", sum, max));
-      System.err.println();
-  }
-
-  private static void selectiveAnalysis(String key, List<FullResult> resultList)
-  {
-      FullResult[] results = resultList.toArray(new FullResult[resultList.size()]);
-      double[] score = new double[results.length];
-      double sum = 0.0;
-      int count = 0;
-      for(int i = 0; i < results.length; i++) {
-          FullResult res1 = results[i];
-          if ( res1 == null ) continue;
-          DiscreteDistr d1 = res1.get(key);
-          if ( d1 == null ) continue;
-          for(int j = i+1; j < results.length; j++) {
-              FullResult res2 = results[j];
-              if ( res2 == null ) continue;
-              if ( Math.abs(res1.getFilters().length - res2.getFilters().length) != 1 ) continue;
-              DiscreteDistr d2 = res2.get(key);
-              if ( d2 == null ) continue;
-              Set freedom = d1.combinedKeys(d2);
-              double gtest = DiscreteDistr.gtest(d1, d2);
-              if ( gtest <= 0.0 ) continue;
-              double chiBound = SFunc.critchi(0.95, freedom.size()-1);
-              if ( Double.isNaN(chiBound) ) continue;
-              double normed = gtest / chiBound;
-              if ( normed <= 1.0 ) continue;
-              double deltaScore = (normed-1.0)*normed;
-              score[i] += deltaScore/2.0;
-              score[j] += deltaScore/2.0;
-              sum += deltaScore;
-              count++;
-          }
-      }
-      double average = sum/count;
-      for(int i = 0; i < score.length; i++) if ( score[i] > 3.0 * average ) {
-          System.out.println(String.format("%s %2d %7.2g %s", key, i, score[i]/average, results[i]));
-      }
-  }
-
   public List<FullResult> runFilterStack(int longMode, Summarizer o)
       throws Exception
   {
@@ -606,7 +418,7 @@ outerloop:
             res.add(res2);
         }
     }
-    // Bootstrapping for changes
+    // Bootstrapping for changes within latest period
     LaterThanFilter timeFilter0 = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
     LaterThanFilter timeFilter1 = createPercTimeFilter(0.33, times[0], FOE_FILTER);
     FullResult res10 = stats(Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter0), FRIEND_FILTER);
@@ -618,54 +430,66 @@ outerloop:
     res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res00 : res01);
     // Loop over the time events
     for(int time = 0; time < times.length; time++) {
-        DateFilter timeFilter = times[time];
+        final DateFilter timeFilter = times[time];
+        final DateFilter pastTimeFilter = time + 1 < times.length ? times[time+1] : null;
+        StatCreator st2 = new StatCreator() {
+                @Override
+                public FullResult stats(Summarizer out, HackFilter... filters) throws Exception {
+                    HackFilter[] combinedFilters = new HackFilter[filters.length+1];
+                    System.arraycopy(filters, 0, combinedFilters, 1, filters.length);
+                    FullResult referenceResult = null;
+                    if ( pastTimeFilter != null ) {
+                        combinedFilters[0] = pastTimeFilter;
+                        referenceResult = Phase1.this.stats(Summarizer.NO_SUMMARIZER, combinedFilters);
+                    }
+                    combinedFilters[0] = timeFilter;
+                    return Phase1.this.stats(out, referenceResult, combinedFilters);
+                }
+
+                @Override
+                public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters) throws Exception {
+                    throw new RuntimeException("Method not implemented.");
+                }
+            };
         if ( longMode == LONG ) {
-            FullResult res1 = stats(o, timeFilter);
+            FullResult res1 = st2.stats(o);
             res.add(res1);
         }
         for(HackFilter f0 : FRIEND_OR_FOE) {
-            FullResult res2 = stats(o, timeFilter, f0);
+            FullResult res2 = st2.stats(o, f0);
             res.add(res2);
-            if ( time == 0 && f0 == FRIEND_FILTER ) {
-                // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
-                // res.add(stats(o, timeFilter, f0, CAN_GET_ULTRA));
-            }
-            else if ( time == 0 && f0 == FOE_FILTER ) {
-                // handled differently now res.add(stats(o, timeFilter, f0, HASKEY_FILTER));
-            }
-            //
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, R8_FILTER));
+                res.add(st2.stats(o, f0, R8_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, R8_FILTER, NON_P8_FILTER ));
+                res.add(st2.stats(o, f0, R8_FILTER, NON_P8_FILTER ));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL1_FILTER));
+                res.add(st2.stats(o, f0, HL1_FILTER));
             }
             if(longMode != LONG && time == 0 ) {
-                res.add(stats(o, timeFilter, f0, L26_FILTER));
+                res.add(st2.stats(o, f0, L26_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL2_FILTER));
+                res.add(st2.stats(o, f0, HL2_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL3_FILTER));
+                res.add(st2.stats(o, f0, HL3_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL4_FILTER));
+                res.add(st2.stats(o, f0, HL4_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL5_FILTER));
+                res.add(st2.stats(o, f0, HL5_FILTER));
             }
             if(longMode == LONG) {
-                res.add(stats(o, timeFilter, f0, HL6_FILTER));
+                res.add(st2.stats(o, f0, HL6_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(stats(o, timeFilter, f0, HL7_FILTER));
+                res.add(st2.stats(o, f0, HL7_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(stats(o, timeFilter, f0, HL8_FILTER));
+                res.add(st2.stats(o, f0, HL8_FILTER));
             }
         }
     }
@@ -699,13 +523,6 @@ outerloop:
 		for(String arg : args) p1.add(arg);
     p1.dumpCSV("out.csv",";");
     List<FullResult> res = p1.runFilterStack(SHORT, o);
-    /*
-    List<FullResult> allFRes = p1.runFilterStack(LONG, NO_SUMMARY);
-    FullResult f0 = allFRes.get(0);
-    for(String key : f0.keys()) {
-        selectiveAnalysis(key, allFRes);
-    }
-    */
   }
 
 }
