@@ -8,7 +8,6 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +27,15 @@ import static de.spieleck.ingress.hackstat.HackFilter.*;
 public class Phase1
     implements Globals, StatCreator
 {
-  public final static boolean INCL_KEY = false;
+  public final static boolean INCL_KEY_AND_MEDIA = false;
+
+  private final static HashSet<String> NOOTHER = new HashSet<>();
+  static {
+      NOOTHER.add(KEY);
+      NOOTHER.add(MEDIA);
+      NOOTHER.add(XMP);
+      NOOTHER.add(RESO);
+  }
 
   private final static Logger L = Logger.getLogger(Phase1.class);
 
@@ -190,12 +197,14 @@ public class Phase1
 		Map<String,Integer> basics = new HashMap<>();
 		Map<Integer,Integer> nkeys = new HashMap<>();
 		Map<Integer,Integer> levels = new HashMap<>();
+		Map<String,Integer> levelsPM = new HashMap<>();
+		Map<String,Integer> levelsENE = new HashMap<>();
 		Map<Integer,Integer> levelTotals = new HashMap<>();
 		Map<Integer,Integer> counts = new HashMap<>();
 		Map<Integer,Integer> noOfItems = new HashMap<>();
 		Map<Integer,Integer> noOfResos = new HashMap<>();
 		Map<Integer,Integer> noOfXmps = new HashMap<>();
-		Map<Integer,Integer> noOfOtherNoKey = new HashMap<>();
+		Map<Integer,Integer> noOfOtherNoKAM = new HashMap<>();
 		Map<String,Integer> noOfPattern = new HashMap<>();
 		Map<String,Integer> noOfUSPattern = new HashMap<>();
 		Map<String,Integer> noResoPattern = new HashMap<>();
@@ -212,8 +221,8 @@ public class Phase1
 		Map<String,Stats1D> crossItems = new HashMap<>();
 		Map<Integer,Stats1D> playerLevelVsKeys = new HashMap<>();
 		Map<Integer,Stats1D> hackLevelVsKeys = new HashMap<>();
-		Map<String,Integer> getKeysStatsHas = new HashMap<>();
-		Map<String,Integer> getKeysStatsHasnot = new HashMap<>();
+		Map<Integer,Integer> getKeysStatsHas = new HashMap<>();
+		Map<Integer,Integer> getKeysStatsHasnot = new HashMap<>();
 		Stats2D overHacks = new Stats2D();
 		Stats2D overHacksNPC = new Stats2D();
 		int totalCount = 0;
@@ -240,7 +249,10 @@ outerloop:
 		for(HackResult hackResult : allHacks) {
 		  int hackLevel = hackResult.getLevel();
       HashSet<String> notSeenItems = new HashSet<>(allFullItems);
-      if ( !INCL_KEY ) notSeenItems.remove(KEY);
+      if ( !INCL_KEY_AND_MEDIA ) {
+          notSeenItems.remove(KEY);
+          notSeenItems.remove(MEDIA);
+      }
 		  for(HackFilter fi : filters) {
 			  if ( !fi.accept(hackResult) ) continue outerloop;
 		  }
@@ -276,7 +288,7 @@ outerloop:
         increment(basics, "Items", 1);
         increment(counts, count, 1);
         String shortName = shortItemName(hackItem);
-        if ( INCL_KEY || !KEY.equals(hackItem.object) ) increment(types, shortName, count);
+        if ( INCL_KEY_AND_MEDIA || !isKAM(hackItem) ) increment(types, shortName, count);
         switch ( hackItem.object ) {
           case RESO: sumResoCount += hackItem.quantity; break;
           case XMP: sumXmpCount += hackItem.quantity; break;
@@ -305,9 +317,11 @@ outerloop:
             relLevelSumNPC += relLevel;
           }
           increment(levels, relLevel, count);
+          increment(levelsPM, relLevel < 0 ? "-" : relLevel == 0 ? "=" : "+", count);
+          increment(levelsENE, relLevel == 0 ? "=" : "!=", count);
           increment(levelPattern, levelBase+relLevel, count);
         }
-        else if ( !INCL_KEY || KEY.equals(hackItem.object) ) {
+        else if ( isOther(hackItem) ) {
           sumOtherCount += count;
         }
         if ( hackLevel > 1 && hackLevel < 7 ) {
@@ -316,12 +330,12 @@ outerloop:
             }
         }
         notSeenItems.remove(fullItem);
-        if ( INCL_KEY || !KEY.equals(hackItem.object) ) increment(crossItems, fullItem, count);
+        if ( INCL_KEY_AND_MEDIA || !isKAM(hackItem) ) increment(crossItems, fullItem, count);
       }
       for(String noItem : notSeenItems) increment(crossItems, noItem, 0);
       increment(noOfResos, sumResoCount, 1);
       increment(noOfXmps, sumXmpCount, 1);
-      increment(noOfOtherNoKey, sumOtherCount, 1);
+      increment(noOfOtherNoKAM, sumOtherCount, 1);
       increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
       increment(noResoPattern, ia2str(resoPattern), 1);
       increment(noXMPPattern, ia2str(xmpPattern), 1);
@@ -331,7 +345,7 @@ outerloop:
 		  increment(noOfItems, sumCount, 1);
       increment(playerLevelVsKeys, hackResult.getPlayerLevel(), sumKeyCount);
       increment(hackLevelVsKeys, hackLevel, sumKeyCount);
-      increment(hasKey ? getKeysStatsHas : getKeysStatsHasnot, hackContainsKey ?"gets":"----", 1);
+      increment(hasKey ? getKeysStatsHas : getKeysStatsHasnot, hackContainsKey ?1:0, 1);
 		  int overLevel = hackResult.getOverLevel();
 		  if ( relLevelCount > 0 ) {
 			  overHacks.add(overLevel,1.0*relLevelSum/relLevelCount);
@@ -348,10 +362,10 @@ outerloop:
 		res.summary("With Key", getKeysStatsHas, totalCountHas, true, reference);
 		res.summary("WO Key", getKeysStatsHasnot, totalCountHasnot, true, reference);
 		if(longMode == LONG) res.summary("hack levels", levelTotals, totalCount, true, reference);
-		res.summary("Items", noOfItems, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Items", noOfItems, totalCount, true, reference);
 		res.summary("Resos", noOfResos, totalCount, true, reference);
 		res.summary("Xmps", noOfXmps, totalCount, true, reference);
-		res.summary("Other (no R,XMP,K)", noOfOtherNoKey, totalCount, true, reference);
+		res.summary("Other (no R,XMP,K,M)", noOfOtherNoKAM, totalCount, true, reference);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount, true, reference);
 		res.summary("Short Patterns", noOfPattern, totalCount, true, reference);
 		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount, true, reference);
@@ -360,6 +374,8 @@ outerloop:
 		if(longMode == LONG) res.summary("Huge Patterns", noOfPatternHuge, totalCount, true, reference);
 		res.summary("Items by Type", types, totalCount, true, reference);
 		res.summary("Items by Level", levels, totalCount, true, reference);
+		res.summary("Items by Level2", levelsPM, totalCount, true, reference);
+		res.summary("Items by Level3", levelsENE, totalCount, true, reference);
 		if(longMode == LONG) res.summary("Patterns of Items by Overlevel, Level", levelPattern, totalCount, true, reference);
 		res.summary2("Items x Level", crossItems, totalCount, true, reference);
 		if(longMode == LONG) res.summary2("Player Level vs Keys", playerLevelVsKeys, totalCount, true, reference);
@@ -378,7 +394,7 @@ outerloop:
         res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
     }
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
-		res.summary(WEEKS, weeks, totalCount, true, reference);
+		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
 		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
 		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
 		out.value("overHacking-Correlation", overHacks.correlation());
@@ -386,6 +402,16 @@ outerloop:
     out.endColumn();
     return res;
   }
+
+  public static boolean isKAM(HackItem hackItem) 
+  {
+      return KEY.equals(hackItem.object) || MEDIA.equals(hackItem.object);
+  } 
+
+  public static boolean isOther(HackItem hackItem) 
+  {
+      return !NOOTHER.contains(hackItem.object);
+  } 
 
   public static String ia2str(int[] x)
   {

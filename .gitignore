@@ -6,3 +6,4 @@ logs/*
 .*.swp
 get.cmd
 private/*
+*~
