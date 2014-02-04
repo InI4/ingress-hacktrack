@@ -32,6 +32,13 @@
             chartEl().style.display = 'none';
             allEl().style.opacity = "1.0";
         }
+        function showHide(id, mode)
+        {
+            var els = document.getElementsByClassName('sh'+id);
+            for(i = 0; i &lt; els.length; i++) {
+                 els[i].style.display = els[i].style.display=='none' || mode=='show' ? '' : 'none';
+            }
+        }
       </script>
       <style type="text/css">
         td, th {
@@ -110,53 +117,45 @@
       </div>
       <div id="all">
       <h1><xsl:value-of select="hs:created"/></h1>
+      <!-- Does not work with Java7, but with old Saxon?! -->
+      <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
       <table>
       <xsl:for-each select="hs:value">
         <tr>
-          <td class="first"><xsl:value-of select="hs:key" /> : </td>
+          <td class="first nobr"><xsl:value-of select="hs:key" /> : </td>
           <td><xsl:value-of select="hs:*[2]" /></td>
         </tr>
       </xsl:for-each>
+        <tr>
+          <td class="first nobr">Statistics : </td>
+          <td>
+            <xsl:for-each select="$all-stats">
+                <xsl:variable name="meStats" select="." />
+                <xsl:variable name="id" select="generate-id($meStats)" />
+                <a href="#{$id}" onclick="showHide('{$id}', 'show');"><xsl:value-of select="."/></a>
+                <xsl:text>, </xsl:text>
+            </xsl:for-each>
+          </td>
+        </tr>
       </table>
-      <!-- Does not work with Java7, but with old Saxon?! -->
-      <xsl:variable name="all-stats" select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
-      Statistics: 
-      <xsl:for-each select="$all-stats">
-          <xsl:variable name="meStats" select="." />
-          <a>
-              <xsl:attribute name="href">
-                  <xsl:text>#</xsl:text>
-                  <xsl:value-of select="generate-id($meStats)" />
-              </xsl:attribute>
-              <xsl:value-of select="."/>
-          </a>
-          <xsl:text>, </xsl:text>
-      </xsl:for-each>
       <table>
       <xsl:for-each select="$all-stats">
           <xsl:variable name="meStats" select="." />
+          <xsl:variable name="id" select="generate-id($meStats)" />
           <!-- <xsl:variable name="items" select="//hs:hackstat/hs:column/hs:stats[hs:key=$meStats]/hs:*[(local-name()='item' or local-name()='item2') and not(hs:key/text()=preceding::hs:stats[hs:key=$meStats]/hs:*[local-name()='item' or local-name()='item2']/hs:key/text())]" /> -->
           <xsl:variable name="items" select="//hs:hackstat/hs:column/hs:stats[hs:key=$meStats]/*[(name() = 'hs:item' or name() = 'hs:item2') and not(hs:key/text()=preceding::hs:stats[hs:key=$meStats]/*[name()='hs:item' or name()='hs:item2']/hs:key/text())]" />
           <tr class="firstRow">
-            <th class="rowleg">
-                <xsl:attribute name="rowspan">
-                    <xsl:value-of select="count($items) + 2" />
-                </xsl:attribute>
-                <a>
-                  <xsl:attribute name="name">
-                      <xsl:value-of select="generate-id($meStats)" />
-                  </xsl:attribute>
-                </a>
+            <th class="rowleg" rowspan="2">
+                <a name="{$id}" />
                 <xsl:value-of select="."/>
-                <!--
-                <div class="small">
-                    <xsl:value-of select="following::hs:description" />
-                </div>
-                -->
+                <br />
+                <br />
+                <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup>toggle view</sup></a>
+                <br />
                 <br />
                 <a href="#top"><sup>^top</sup></a>
             </th>
-            <td rowspan="2"> </td>
+            <td rowspan="2" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
             <xsl:variable name="metacolumns"
                 select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
             <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
@@ -171,12 +170,13 @@
                     </th>
                   </xsl:if>
             </xsl:for-each>
-            <td rowspan="2"> </td>
-            <th class="rowleg">
-                <xsl:attribute name="rowspan">
-                    <xsl:value-of select="count($items) + 2" />
-                </xsl:attribute>
+            <td rowspan="2" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
+            <th class="rowleg" rowspan="2">
               <xsl:value-of select="."/>
+              <br />
+              <br />
+              <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup>toggle view</sup></a>
+              <br />
               <br />
               <a href="#top"><sup>^top</sup></a>
             </th>
@@ -234,12 +234,12 @@
             </xsl:for-each>
           </tr>
           <xsl:for-each select="$items" >
-              <tr>
+            <tr class='sh{$id}' style='display : none' >
                   <xsl:call-template name="data-row" >
                       <xsl:with-param name="meItem" select="." />
                       <xsl:with-param name="meStats" select="$meStats" />
                   </xsl:call-template>
-              </tr>
+             </tr>
           </xsl:for-each>
       </xsl:for-each>
       </table>
@@ -293,7 +293,8 @@
     <xsl:param name="meItem" />
     <xsl:param name="meStats" />
     <xsl:variable name="meKey" select="$meItem/hs:key" />
-    <th class="rowleg2">
+    <td>&#160;</td>
+    <th class="rowleg2 nobr" >
         <xsl:value-of select="$meKey"/>
     </th>
     <!-- <xsl:for-each select="//hs:column"> -->
@@ -321,9 +322,10 @@
           </xsl:otherwise>
         </xsl:choose>
     </xsl:for-each>
-    <th class="rowleg2">
+    <th class="rowleg2 nobr">
         <xsl:value-of select="$meKey"/>
     </th>
+    <td>&#160;</td>
 </xsl:template>
 
 </xsl:stylesheet>
