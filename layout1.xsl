@@ -212,6 +212,10 @@
                   <xsl:if test="$average">
 		      <br />mean=<xsl:value-of select="format-number($average,'0.00')" />
                   </xsl:if>
+                  <xsl:variable name="sdev" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_sdev']/hs:number" />
+                  <xsl:if test="$sdev">
+			  <br />+/- <xsl:value-of select="format-number($sdev,'0.00')" />
+                  </xsl:if>
                   <xsl:variable name="changePerc" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_changePerc']/hs:string" />
                   <xsl:if test="$changePerc">
                     <br /><span>

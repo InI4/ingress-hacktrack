@@ -49,19 +49,26 @@ public class FullResult
       if ( norm == null ) {
           norm = Integer.valueOf(sum);
       }
-      double hsum = 0.0;
       double f = 100.0 / norm;
       double f2 = 100.0 / sum;
-      if ( allInt ) {
-          for(Object key : keys) {
-              hsum += data.get(key) * ((Integer)key);
-          }
-      }
+      //
       out.start(label);
       String description = String.format("total=%d, norm=%d ", sum, norm);
-      // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
       out.description(description);
-      if ( allInt && average ) out.value("_average", hsum/norm);
+      if ( allInt && average && sum > 1 ) {
+          double hsum = 0.0, hsum2 = 0.0;
+          for(Object key : keys) {
+              int w = data.get(key);
+              hsum += w * ((Integer)key).intValue();
+          }
+          double avg = hsum/sum;
+          for(Object key : keys) {
+              double w = data.get(key) - avg;
+              hsum2 += w * w * ((Integer)key).intValue();
+          }
+          out.value("_average", avg);
+          out.value("_sdev", Math.sqrt(hsum2/(sum-1)/sum));
+      }
       out.setNorms(f, f2);
       DiscreteDistr distr = prepareDistr(label);
       for(Object key : keys) {
@@ -85,20 +92,23 @@ public class FullResult
         allInt &= (key instanceof Integer);
       }
       Arrays.sort(keys);
-      if ( norm == null ) {
-          norm = Integer.valueOf(sum);
-      }
-      double hsum = 0.0;
-      if ( allInt ) {
-          for(Object key : keys) {
-              hsum += data.get(key).sum() * ((Integer)key);
-          }
-      }
       out.start(label);
       String description = String.format("total=%d, norm=%d ", sum, norm);
-      // if ( allInt && average) description += String.format(", average=%.2f ", hsum / norm);
       out.description(description);
-      if ( allInt && average ) out.value("_average", hsum/norm);
+      if ( allInt && average && sum > 1 ) {
+          double hsum = 0.0, hsum2 = 0.0;
+          for(Object key : keys) {
+              double w = data.get(key).sum();
+              hsum += w * ((Integer)key).intValue();
+          }
+          double avg = hsum/sum;
+          for(Object key : keys) {
+              double w = data.get(key).sum() - avg;
+              hsum2 += w * w * ((Integer)key).intValue();
+          }
+          out.value("_average", avg);
+          out.value("_sdev", Math.sqrt(hsum2/(sum-1)/sum));
+      }
       DiscreteDistr distr = prepareDistr(label);
       for(Object key : keys) {
           out.item(key, data.get(key));

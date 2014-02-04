@@ -390,8 +390,8 @@ outerloop:
         }
 		}
     */
-    for(int i = 1; i <= 8; i++) {
-        res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), false, reference);
+    for(int i = longMode == LONG ? 1 : 5; i <= 8; i++) {
+        res.summary("Hack Level L"+i, levelResults.getRow(i), levelCounts.get(i), true, reference);
     }
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
 		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
