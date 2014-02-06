@@ -34,9 +34,14 @@
         }
         function showHide(id, mode)
         {
-            var els = document.getElementsByClassName('sh'+id);
+            var els = document.getElementsByClassName('sh_'+id);
+            var nst = els[0].style.display == 'none' || mode=='show' ? '' : 'none';
             for(i = 0; i &lt; els.length; i++) {
-                 els[i].style.display = els[i].style.display=='none' || mode=='show' ? '' : 'none';
+                 els[i].style.display = nst;
+            }
+            var el2 = document.getElementsByClassName('th_'+id);
+            for(i = 0; i &lt; el2.length; i++) {
+                el2[i].innerHTML = nst == 'none' ? 'show details' : 'hide details';
             }
         }
       </script>
@@ -81,9 +86,16 @@
         .firstRow TH {
                   padding: 5pt;
         }
-        .secondRow {
+        .secondRow, .thirdRow {
             background: #86C1FF;
             border-top: black 2px solid;
+        }
+        .secondRow TH { 
+            padding: 3pt;
+        }
+        .thirdRow TH { 
+            padding: 2pt;
+            font-weight: normal;
         }
         .nobr {
             white-space:nowrap;
@@ -145,17 +157,17 @@
           <!-- <xsl:variable name="items" select="//hs:hackstat/hs:column/hs:stats[hs:key=$meStats]/hs:*[(local-name()='item' or local-name()='item2') and not(hs:key/text()=preceding::hs:stats[hs:key=$meStats]/hs:*[local-name()='item' or local-name()='item2']/hs:key/text())]" /> -->
           <xsl:variable name="items" select="//hs:hackstat/hs:column/hs:stats[hs:key=$meStats]/*[(name() = 'hs:item' or name() = 'hs:item2') and not(hs:key/text()=preceding::hs:stats[hs:key=$meStats]/*[name()='hs:item' or name()='hs:item2']/hs:key/text())]" />
           <tr class="firstRow">
-            <th class="rowleg" rowspan="2">
+            <th class="rowleg" rowspan="3">
                 <a name="{$id}" />
                 <xsl:value-of select="."/>
                 <br />
                 <br />
-                <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup>toggle view</sup></a>
+                <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup class='th_{$id}'>show details</sup></a>
                 <br />
                 <br />
                 <a href="#top"><sup>^top</sup></a>
             </th>
-            <td rowspan="2" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
+            <td rowspan="3" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
             <xsl:variable name="metacolumns"
                 select="hs:column/hs:stats/hs:key[not(text()=preceding::hs:stats/hs:key/text())]" /> 
             <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
@@ -170,12 +182,12 @@
                     </th>
                   </xsl:if>
             </xsl:for-each>
-            <td rowspan="2" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
-            <th class="rowleg" rowspan="2">
+            <td rowspan="3" class="nobr">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</td>
+            <th class="rowleg" rowspan="3">
               <xsl:value-of select="."/>
               <br />
               <br />
-              <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup>toggle view</sup></a>
+              <a href="javascript:void(0)" onclick="showHide('{$id}','?');" ><sup class="th_{$id}">show details</sup></a>
               <br />
               <br />
               <a href="#top"><sup>^top</sup></a>
@@ -189,8 +201,7 @@
                       <xsl:text>filter</xsl:text>
                       <xsl:if test="not(contains(hs:key/text(), 'FRIEND'))"> evil</xsl:if>
                   </xsl:attribute>
-                  <div style="vertical-align:top">
-                    <a href="javascript:void(0)" style="float:top">
+                    <a href="javascript:void(0)" rubarb="float:top">
                       <xsl:attribute name="onclick">
                         <xsl:text>javascript:chartFun(</xsl:text>
                         <xsl:text>'</xsl:text>
@@ -207,14 +218,23 @@
                       </xsl:attribute>
                       <xsl:value-of select="substring-after($theKey, $SPC)" />
                     </a>
-                  </div>
+                 </th>
+            </xsl:for-each>
+            </tr><tr class="thirdRow">
+            <xsl:for-each select="//hs:column[contains(hs:key/text(),$filter) and not(contains(hs:key/text(),$antifilter))]">
+                <xsl:variable name="colName" select="hs:key/text()" />
+                <th colspan="2"> 
+                  <xsl:attribute name="class">
+                      <xsl:text>filter</xsl:text>
+                      <xsl:if test="not(contains(hs:key/text(), 'FRIEND'))"> evil</xsl:if>
+                  </xsl:attribute>
                   <xsl:variable name="average" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_average']/hs:number" />
                   <xsl:if test="$average">
-		      <br />mean=<xsl:value-of select="format-number($average,'0.00')" />
+                    mean=<xsl:value-of select="format-number($average,'0.00')" />
                   </xsl:if>
                   <xsl:variable name="sdev" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_sdev']/hs:number" />
                   <xsl:if test="$sdev">
-			  <br />+/- <xsl:value-of select="format-number($sdev,'0.00')" />
+                    <br />+/- <xsl:value-of select="format-number($sdev,'0.00')" />
                   </xsl:if>
                   <xsl:variable name="changePerc" select="//hs:hackstat/hs:column[hs:key/text() = $colName]/hs:stats[hs:key=$meStats]/hs:value[hs:key/text() = '_changePerc']/hs:string" />
                   <xsl:if test="$changePerc">
@@ -234,7 +254,7 @@
             </xsl:for-each>
           </tr>
           <xsl:for-each select="$items" >
-            <tr class='sh{$id}' style='display : none' >
+            <tr class='sh_{$id}' style='display : none' >
                   <xsl:call-template name="data-row" >
                       <xsl:with-param name="meItem" select="." />
                       <xsl:with-param name="meStats" select="$meStats" />
