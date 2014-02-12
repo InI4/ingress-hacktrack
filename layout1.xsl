@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?> 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
                 xmlns:hs="de.spieleck.ingress.hackstat"
+                xmlns="http://www.w3.org/1999/xhtml"
+                exclude-result-prefixes="hs xsl"
                 version="1.0">
-  <xsl:output method="html" indent="no" />
+                <xsl:output method="html" indent="no" encoding="utf-8" doctype-public="-//W3C/DTD XHTML 1.0 Strict/EN" doctype-system="http://www.w3.org/TR/xhtml/DTD/xhtml1-strict.dtd" />
   <xsl:param name="filter" select="''" />
   <xsl:param name="antifilter" select="'NEUTRAL'" />
   <xsl:param name="SPC" select="' '" />
@@ -254,6 +256,7 @@
             </xsl:for-each>
           </tr>
           <xsl:for-each select="$items" >
+            <xsl:sort select="./hs:key" data-type="number"/>
             <tr class='sh_{$id}' style='display : none' >
                   <xsl:call-template name="data-row" >
                       <xsl:with-param name="meItem" select="." />
@@ -286,6 +289,7 @@
     <xsl:variable name="meColumnKey" select="$meColumn/hs:key" />
     <xsl:text>["",""]</xsl:text>
     <xsl:for-each select="$items" >
+      <xsl:sort select="./hs:key" data-type="number"/>
       <xsl:variable name="meKey" select="./hs:key" />
       <!--
       <xsl:variable name="val" select="//hs:column[hs:key=$meColumnKey]/hs:stats[hs:key=$meStats]/*[(name()='hs:item' or name()='hs:item2') and hs:key = $meKey]" />
