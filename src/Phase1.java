@@ -206,6 +206,9 @@ public class Phase1
 		Map<Integer,Integer> noOfXmps = new HashMap<>();
 		Map<Integer,Integer> noOfOtherNoKAM = new HashMap<>();
 		Map<String,Integer> noOfPattern = new HashMap<>();
+		Map<String,Integer> hackLevelPatterns = new HashMap<>();
+		Map<String,Integer> hackLevelPatternsRESO = new HashMap<>();
+		Map<String,Integer> hackLevelPatternsXMP = new HashMap<>();
 		Map<String,Integer> noOfUSPattern = new HashMap<>();
 		Map<String,Integer> noResoPattern = new HashMap<>();
 		Map<String,Integer> noXMPPattern = new HashMap<>();
@@ -307,19 +310,26 @@ outerloop:
           levelResults.inc(hackLevel, hackItem.level, count);
           // XXX this somehow assumes L8 player!
           int relLevel = hackItem.level - hackLevel;
-          if ( RESO.equals(hackItem.object) ) resoPattern[relLevel+1] = count;
-          if ( XMP.equals(hackItem.object) ) xmpPattern[relLevel+1] = count;
           fullItem += "."+relLevel;
           relLevelCount++;
           relLevelSum += relLevel;
           if ( !CUBE.equals(hackItem.object) ) {
             relLevelCountNPC++;
             relLevelSumNPC += relLevel;
+            increment(hackLevelPatterns, hackLevel+":"+hackItem.level, count);
           }
           increment(levels, relLevel, count);
           increment(levelsPM, relLevel < 0 ? "-" : relLevel == 0 ? "=" : "+", count);
           increment(levelsENE, relLevel == 0 ? "=" : "!=", count);
           increment(levelPattern, levelBase+relLevel, count);
+          if ( RESO.equals(hackItem.object) ) {
+              increment(hackLevelPatternsRESO, hackLevel+":"+hackItem.level, count);
+              resoPattern[relLevel+1] = count;
+          }
+          else if ( XMP.equals(hackItem.object) ) {
+              increment(hackLevelPatternsXMP, hackLevel+":"+hackItem.level, count);
+              xmpPattern[relLevel+1] = count;
+          }
         }
         else if ( isOther(hackItem) ) {
           sumOtherCount += count;
@@ -339,8 +349,8 @@ outerloop:
       increment(noOfUSPattern, Integer.toString(sumResoCount) + sumXmpCount + sumUSCount, 1);
       increment(noResoPattern, ia2str(resoPattern), 1);
       increment(noXMPPattern, ia2str(xmpPattern), 1);
-      increment(noOfPattern, Integer.toString(sumResoCount) + sumXmpCount, 1);
-      increment(noOfPatternBig, Integer.toString(sumResoCount) + sumXmpCount + sumOtherCount, 1);
+      increment(noOfPattern, Integer.toString(sumResoCount) +"/"+ sumXmpCount, 1);
+      increment(noOfPatternBig, Integer.toString(sumResoCount) +"/"+ sumXmpCount +"/"+ sumOtherCount, 1);
 		  increment(noOfPatternHuge, Integer.toString(sumResoCount) + sumXmpCount + "-" + sumKeyCount + sumShieldCount, 1);
 		  increment(noOfItems, sumCount, 1);
       increment(playerLevelVsKeys, hackResult.getPlayerLevel(), sumKeyCount);
@@ -368,6 +378,10 @@ outerloop:
 		res.summary("Other (no R,XMP,K,M)", noOfOtherNoKAM, totalCount, true, reference);
 		if(longMode == LONG) res.summary("nkeys", nkeys, totalCount, true, reference);
 		res.summary("Short Patterns", noOfPattern, totalCount, true, reference);
+    // XXX the next 3 also depend on what players actually hacked recently, so true changes are hard to track.
+		if(longMode == LONG) res.summary("Hacklevel:Itemlevel RESO+XMP", hackLevelPatterns, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Hacklevel:Itemlevel RESO", hackLevelPatternsRESO, totalCount, true, reference);
+		if(longMode == LONG) res.summary("Hacklevel:Itemlevel XMP", hackLevelPatternsXMP, totalCount, true, reference);
 		if(longMode == LONG) res.summary("US Patterns", noOfUSPattern, totalCount, true, reference);
 		res.summary("Rare Items", rareItems, totalCount, true, reference);
 		if(longMode == LONG) res.summary("Long Patterns", noOfPatternBig, totalCount, true, reference);
@@ -395,8 +409,8 @@ outerloop:
     }
 		if(longMode == LONG) res.summary("Hackers", hackers, totalCount, true, reference);
 		if(longMode == LONG) res.summary(WEEKS, weeks, totalCount, true, reference);
-		res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
-		res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
+		if(longMode == LONG) res.summary("ResoPatterns", noResoPattern, totalCount, true, reference);
+		if(longMode == LONG) res.summary("XMPPatterns", noXMPPattern, totalCount, true, reference);
 		out.value("overHacking-Correlation", overHacks.correlation());
 		out.value("overHacking-NonPC-Correlation", overHacksNPC.correlation());
     out.endColumn();
