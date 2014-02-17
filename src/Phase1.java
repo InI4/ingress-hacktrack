@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -158,24 +159,72 @@ public class Phase1
   }
 
   /**
+   * Convert a hack in a small pattern.
+   */
+  private static String smallPattern(HackResult hackResult) {
+      int sumResoCount = 0;
+      int sumXmpCount = 0;
+      for(HackItem hackItem : hackResult.hack.items) {
+          switch ( hackItem.object ) {
+              case RESO: sumResoCount += hackItem.quantity; break;
+              case XMP: sumXmpCount += hackItem.quantity; break;
+          }
+      }
+      return String.format("%d/%d", sumResoCount, sumXmpCount);
+  }
+
+  /**
+   * Convert a hack in a list of rare items
+   */
+  private static List<String> rareItems(HackResult hackResult) {
+      List<String> res = new ArrayList<>(); 
+      for(HackItem hackItem : hackResult.hack.items) {
+          if ( hackItem.hasRarity() ) res.add(hackItem.toString());
+      }
+      return res;
+  }
+
+  /**
    * Base way to attack KNIME or something common to the data.
    * Please add columns as required!
    */
-  public void dumpCSV(String fName, String sep)
+  public void dumpCSV(String fName, String sep, HackFilter... filters)
       throws IOException
   {
-      File fi = new File(fName);
-      PrintWriter pw = new PrintWriter(new FileWriter(fi));
+      LinkedHashSet<String> patterns = new LinkedHashSet<>();
+      LinkedHashSet<String> rares = new LinkedHashSet<>();
+outerloop1:
       for(HackResult hackResult : allHacks) {
-          pw.print(hackResult.timestamp);
-          pw.print(sep);
-          pw.print(hackResult.getPortalLevel());
-          pw.print(sep);
-          pw.print(hackResult.getPlayerLevel());
-          pw.print(sep);
-          pw.print(hackResult.getItemCount());
-          pw.print(sep);
-          pw.print(FRIEND.equals(hackResult.hack.type)? 1 : 0);
+          for(HackFilter fi : filters) if ( !fi.accept(hackResult) ) continue outerloop1;
+          String pat = smallPattern(hackResult);
+          patterns.add(pat);
+          List<String> items = rareItems(hackResult);
+          rares.addAll(items);
+      }
+      PrintWriter pw = new PrintWriter(new FileWriter(new File(fName)));
+      pw.print("# ");
+      for(HackFilter f : filters) pw.print(" "+f.toString());
+      pw.println();
+      pw.print("# ");
+      for(String s : patterns) pw.print(" "+s);
+      pw.print("  ");
+      for(String s : rares) pw.print(" "+s);
+      pw.println();
+outerloop2:
+      for(HackResult hackResult : allHacks) {
+          for(HackFilter fi : filters) if ( !fi.accept(hackResult) ) continue outerloop2;
+          String pat = smallPattern(hackResult);
+          List<String> items = rareItems(hackResult);
+          pw.print(String.format("%10.0f", hackResult.timestamp));
+          for(String s : patterns) {
+              pw.print(sep);
+              pw.print(pat.equals(s) ? 1 : 0);
+          }
+          pw.print("  ");
+          for(String s : rares) {
+              pw.print(sep);
+              pw.print(items.contains(s) ? 1 : 0);
+          }
           pw.println();
       }
       pw.close();
@@ -561,7 +610,8 @@ outerloop:
     o.addSummarizer(new XSLTSummarizer());
     o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
 		for(String arg : args) p1.add(arg);
-    p1.dumpCSV("out.csv",";");
+    p1.dumpCSV("out_o.csv","; ", FRIEND_FILTER);
+    p1.dumpCSV("out_e.csv","; ", FOE_FILTER);
     List<FullResult> res = p1.runFilterStack(SHORT, o);
   }
 
