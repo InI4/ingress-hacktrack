@@ -232,14 +232,14 @@ outerloop2:
   }
 
   @Override
-	public FullResult stats(Summarizer out, HackFilter... filters)
+	public FullResult stats(int slot, Summarizer out, HackFilter... filters)
       throws Exception
 	{
-      return stats(out, null, filters);
+      return stats(slot, out, null, filters);
   }
 
   @Override
-	public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters)
+	public FullResult stats(int slot, Summarizer out, FullResult reference, HackFilter... filters)
       throws Exception
 	{
 		Map<String,Integer> types = new HashMap<>();
@@ -288,7 +288,8 @@ outerloop1:
 		  for(HackFilter fi : filters) {
 			  if ( !fi.accept(hackResult) ) continue outerloop1;
 		  }
-		  for(HackItem hackItem : hackResult.hack.items) {
+      List<HackItem> items = hackResult.hack.result(slot);
+		  if ( items != null ) for(HackItem hackItem : items ) {
         String fullItem = shortItemName(hackItem);
         if ( hackItem.level > 0 ) {
           int relLevel = hackItem.level - hackLevel;
@@ -334,7 +335,8 @@ outerloop:
       increment(weeks, String.format("%ty-%<tm-%<td", week), 1);
       increment(levelTotals, hackLevel, 1);
       boolean hackContainsKey = false;
-		  for(HackItem hackItem : hackResult.hack.items) {
+      List<HackItem> items = hackResult.hack.result(slot);
+		  if ( items != null ) for(HackItem hackItem : items ) {
         int count = hackItem.quantity;
         sumCount += count;
         increment(basics, "Items", 1);
@@ -415,7 +417,7 @@ outerloop:
 		}
     if ( totalCount == 0 ) return null;
     // if (longMode != LONG || totalCount < 10 ) return null;
-    FullResult res = new FullResult(filters, out);
+    FullResult res = new FullResult(slot == 0 ? null : "Bonus", filters, out);
     out.startColumn(Util.append(new StringBuilder(), filters));
 		res.summary("Basics", basics, totalCount, true, reference);
 		res.summary("With Key", getKeysStatsHas, totalCountHas, true, reference);
@@ -493,27 +495,27 @@ outerloop:
       return name2 == null ? name : name2;
   }
 
-  public List<FullResult> runFilterStack(int longMode, Summarizer o)
+  public List<FullResult> runFilterStack(int slot, int longMode, Summarizer o)
       throws Exception
   {
     o.value("Last Hack", String.format("%tF %<tT", 1000*(long) endTime));
     o.value("Total Data", allHacks.size());
     List<FullResult> res = new ArrayList<FullResult>();
     if ( longMode == LONG ) {
-        FullResult base1 = stats(o, NO_FILTER);
+        FullResult base1 = stats(slot, o, NO_FILTER);
         res.add(base1);
         for(HackFilter f0 : FRIEND_OR_FOE) {
-            FullResult res2 = stats(o, f0);
+            FullResult res2 = stats(slot, o, f0);
             res.add(res2);
         }
     }
     // Bootstrapping for changes within latest period
     LaterThanFilter timeFilter0 = createPercTimeFilter(0.33, times[0], FRIEND_FILTER);
     LaterThanFilter timeFilter1 = createPercTimeFilter(0.33, times[0], FOE_FILTER);
-    FullResult res10 = stats(Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter0), FRIEND_FILTER);
-    FullResult res11 = stats(Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter1), FOE_FILTER);
-    FullResult res00 = stats(o, res10, timeFilter0, FRIEND_FILTER);
-    FullResult res01 = stats(o, res11, timeFilter1, FOE_FILTER);
+    FullResult res10 = stats(slot, Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter0), FRIEND_FILTER);
+    FullResult res11 = stats(slot, Summarizer.NO_SUMMARIZER, times[0], new Not(timeFilter1), FOE_FILTER);
+    FullResult res00 = stats(slot, o, res10, timeFilter0, FRIEND_FILTER);
+    FullResult res01 = stats(slot, o, res11, timeFilter1, FOE_FILTER);
     // Finally add some of the bootstrap data
     res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res01 : res00);
     res.add(timeFilter0.compareTo(timeFilter1) < 0 ? res00 : res01);
@@ -523,66 +525,65 @@ outerloop:
         final DateFilter pastTimeFilter = time + 1 < times.length ? times[time+1] : null;
         StatCreator st2 = new StatCreator() {
                 @Override
-                public FullResult stats(Summarizer out, HackFilter... filters) throws Exception {
+                public FullResult stats(int slot, Summarizer out, HackFilter... filters) throws Exception {
                     HackFilter[] combinedFilters = new HackFilter[filters.length+1];
                     System.arraycopy(filters, 0, combinedFilters, 1, filters.length);
                     FullResult referenceResult = null;
                     if ( pastTimeFilter != null ) {
                         combinedFilters[0] = pastTimeFilter;
-                        referenceResult = Phase1.this.stats(Summarizer.NO_SUMMARIZER, combinedFilters);
+                        referenceResult = Phase1.this.stats(slot, Summarizer.NO_SUMMARIZER, combinedFilters);
                     }
                     combinedFilters[0] = timeFilter;
-                    return Phase1.this.stats(out, referenceResult, combinedFilters);
+                    return Phase1.this.stats(slot, out, referenceResult, combinedFilters);
                 }
 
                 @Override
-                public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters) throws Exception {
+                public FullResult stats(int slot, Summarizer out, FullResult reference, HackFilter... filters) throws Exception {
                     throw new RuntimeException("Method not implemented.");
                 }
             };
         if ( longMode == LONG ) {
-            FullResult res1 = st2.stats(o);
+            FullResult res1 = st2.stats(slot, o);
             res.add(res1);
         }
         for(HackFilter f0 : FRIEND_OR_FOE) {
-            FullResult res2 = st2.stats(o, f0);
+            FullResult res2 = st2.stats(slot, o, f0);
             res.add(res2);
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, R8_FILTER));
+                res.add(st2.stats(slot, o, f0, R8_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, R8_FILTER, NON_P8_FILTER ));
+                res.add(st2.stats(slot, o, f0, R8_FILTER, NON_P8_FILTER ));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL1_FILTER));
+                res.add(st2.stats(slot, o, f0, HL1_FILTER));
             }
             if(longMode != LONG && time == 0 ) {
-                res.add(st2.stats(o, f0, L26_FILTER));
+                res.add(st2.stats(slot, o, f0, L26_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL2_FILTER));
+                res.add(st2.stats(slot, o, f0, HL2_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL3_FILTER));
+                res.add(st2.stats(slot, o, f0, HL3_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL4_FILTER));
+                res.add(st2.stats(slot, o, f0, HL4_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL5_FILTER));
+                res.add(st2.stats(slot, o, f0, HL5_FILTER));
             }
             if(longMode == LONG) {
-                res.add(st2.stats(o, f0, HL6_FILTER));
+                res.add(st2.stats(slot, o, f0, HL6_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(st2.stats(o, f0, HL7_FILTER));
+                res.add(st2.stats(slot, o, f0, HL7_FILTER));
             }
             if(longMode == LONG || time == 0 ) {
-                res.add(st2.stats(o, f0, HL8_FILTER));
+                res.add(st2.stats(slot, o, f0, HL8_FILTER));
             }
         }
     }
-    o.close();
     return res;
 	}
 
@@ -606,13 +607,20 @@ outerloop:
 	{
     int longMode = SHORT;
 		Phase1 p1 = new Phase1(longMode);
-    CombinedSummarizer o = new CombinedSummarizer();
-    o.addSummarizer(new XSLTSummarizer());
-    o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
 		for(String arg : args) p1.add(arg);
     p1.dumpCSV("out_o.csv","; ", FRIEND_FILTER);
     p1.dumpCSV("out_e.csv","; ", FOE_FILTER);
-    List<FullResult> res = p1.runFilterStack(SHORT, o);
+    CombinedSummarizer o;
+    o = new CombinedSummarizer();
+    o.addSummarizer(new XSLTSummarizer());
+    o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out.html"));
+    List<FullResult> res = p1.runFilterStack(0, longMode, o);
+    o.close();
+    // 
+    o = new CombinedSummarizer();
+    o.addSummarizer(new XSLTSummarizer("layout1.xsl", "out_bonus.html"));
+    List<FullResult> resBonus = p1.runFilterStack(1, SHORT, o);
+    o.close();
   }
 
 }

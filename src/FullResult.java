@@ -18,10 +18,17 @@ public class FullResult
 {
     private HackFilter[] filters;
     private Summarizer out;
+    private String prefix;
     private HashMap<String,DiscreteDistr> allData = new LinkedHashMap<>();
 
     public FullResult(HackFilter[] filters, Summarizer out)
     {
+        this(null, filters, out);
+    }
+
+    public FullResult(String prefix, HackFilter[] filters, Summarizer out)
+    {
+        this.prefix = prefix;
         this.filters = filters;
         this.out = out;
     }
@@ -52,7 +59,7 @@ public class FullResult
       double f = 100.0 / norm;
       double f2 = 100.0 / sum;
       //
-      out.start(label);
+      out.start(prefix(label));
       String description = String.format("total=%d, norm=%d ", sum, norm);
       out.description(description);
       if ( allInt && average && sum > 1 ) {
@@ -92,7 +99,7 @@ public class FullResult
         allInt &= (key instanceof Integer);
       }
       Arrays.sort(keys);
-      out.start(label);
+      out.start(prefix(label));
       String description = String.format("total=%d, norm=%d ", sum, norm);
       out.description(description);
       if ( allInt && average && sum > 1 ) {
@@ -116,6 +123,11 @@ public class FullResult
       }
       addTest2Out(distr, label, reference);
       out.finish(sum);
+    }
+
+    public String prefix(String label)
+    {
+        return prefix == null ? label : prefix + " " + label;
     }
 
     private void addTest2Out(DiscreteDistr d1, String label, FullResult reference)

@@ -6,10 +6,10 @@ package de.spieleck.ingress.hackstat;
 public interface StatCreator
 {
     /** Generate stats. */
-    public FullResult stats(Summarizer out, HackFilter... filters)
+    public FullResult stats(int slot, Summarizer out, HackFilter... filters)
         throws Exception;
 
     /** Generate stats and compare to a reference. */
-    public FullResult stats(Summarizer out, FullResult reference, HackFilter... filters)
+    public FullResult stats(int slot, Summarizer out, FullResult reference, HackFilter... filters)
           throws Exception;
 }

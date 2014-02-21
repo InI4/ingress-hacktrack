@@ -6,6 +6,7 @@ public class Hack
 {
 		String type;
 		List<HackItem> items;
+		List<HackItem> bonus;
     boolean can_get_ultra = false;
     int nkeys = -1;
 
@@ -23,8 +24,13 @@ public class Hack
 			return items.size();
 		}
 
+    public List<HackItem> result(int i)
+    {
+        return i == 1 ? bonus : items;
+    }
+
 		public String toString()
 		{
-			return "Hack["+type+" "+items+"]";
+			return "Hack["+type+" "+items+" "+bonus+"]";
 		}
 }
