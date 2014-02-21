@@ -1,9 +1,11 @@
 data/*
 archive/*
-out*
 classes/*
 logs/*
 .*.swp
 get.cmd
 private/*
 *~
+out*.csv
+out.xml
+grepLAR.cmd
